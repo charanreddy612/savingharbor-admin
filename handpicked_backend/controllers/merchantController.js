@@ -24,7 +24,7 @@ export async function listMerchants(req, res) {
   try {
     const name = req.query?.name || "";
     const page = Math.max(1, toInt(req.query?.page || 1, 1));
-    const limit = Math.min(100, Math.max(1, toInt(req.query?.limit || 20, 20)));
+    const limit = Math.min(150, Math.max(1, toInt(req.query?.limit || 20, 20)));
 
     const { rows, total } = await merchantRepo.list({ name, page, limit });
     return res.json({ data: { rows, total }, error: null });
