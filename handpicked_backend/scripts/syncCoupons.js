@@ -20,7 +20,7 @@ import { supabase } from "../dbhelper/dbclient.js";
    CONFIG
 ========================= */
 
-const COUPONS_XLSX = path.join(process.cwd(), "scripts/coupons.xlsx");
+const COUPONS_XLSX = path.join(process.cwd(), "coupons.xlsx");
 
 /* =========================
    DESCRIPTION TEMPLATES

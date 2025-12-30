@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 import * as cheerio from "cheerio";
 import ExcelJS from "exceljs";
 
-const START_URL = process.argv[2] || "https://sociablelabs.com/stores";
+const START_URL = process.argv[2] || "https://sociablelabs.com/stores/A";
 const OUTPUT_DIR = process.cwd();
 const CONCURRENT_PAGES = 3;
 
