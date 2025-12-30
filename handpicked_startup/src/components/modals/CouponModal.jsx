@@ -35,12 +35,9 @@ export default function CouponModal({ id, onClose }) {
     is_publish: true,
   });
 
-  const [stores, setStores] = useState([]);
-  const [storesLoading, setStoresLoading] = useState(false);
-  const [storesError, setStoresError] = useState(null);
   const [availableCategories, setAvailableCategories] = useState([]);
 
-  // CREATE search state
+  // Store search
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -56,38 +53,13 @@ export default function CouponModal({ id, onClose }) {
     return () => document.body.classList.remove("modal-open");
   }, []);
 
-  // Load stores ONLY for edit dropdown
-  useEffect(() => {
-    if (!isEdit) return;
-    (async () => {
-      setStoresLoading(true);
-      setStoresError(null);
-      try {
-        const res = await listMerchants({ page: 1, limit: 5000 });
-        const data = res?.data || [];
-        setStores(
-          data.map((m) => ({
-            id: String(m.id),
-            name: m.name,
-            aff_url: m.aff_url || "",
-            website: m.web_url || "",
-            categories: m.category_names || [],
-          }))
-        );
-      } catch {
-        setStoresError("Failed to load stores");
-      } finally {
-        setStoresLoading(false);
-      }
-    })();
-  }, [isEdit]);
-
-  // Load coupon for edit
+  // Load coupon (EDIT)
   useEffect(() => {
     if (!isEdit) return;
     (async () => {
       const result = await getCoupon(id);
       if (!result) return;
+
       setForm({
         store_id: String(result.merchant_id ?? ""),
         coupon_type: result.coupon_type || "coupon",
@@ -113,16 +85,20 @@ export default function CouponModal({ id, onClose }) {
         is_publish:
           result.is_publish !== undefined ? !!result.is_publish : true,
       });
+
+      // Prefill store name
+      setSearch(result.merchant_name || "");
+      setAvailableCategories(result.category_names || []);
     })();
   }, [id, isEdit]);
 
-  // CREATE async search
+  // Async store search (CREATE + EDIT)
   useEffect(() => {
-    if (isEdit) return;
     if (search.length < 3) {
       setSearchResults([]);
       return;
     }
+
     (async () => {
       setSearchLoading(true);
       const res = await listMerchants({ name: search, limit: 10 });
@@ -138,7 +114,7 @@ export default function CouponModal({ id, onClose }) {
       setHighlightIndex(-1);
       setSearchLoading(false);
     })();
-  }, [search, isEdit]);
+  }, [search]);
 
   const selectStore = (store) => {
     setForm((prev) => ({
@@ -168,6 +144,7 @@ export default function CouponModal({ id, onClose }) {
     if (e.key === "Escape") {
       setSearch("");
       setSearchResults([]);
+      setHighlightIndex(-1);
     }
   };
 
@@ -175,17 +152,21 @@ export default function CouponModal({ id, onClose }) {
     e.preventDefault();
     if (busy) return;
     setBusy(true);
+
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => {
         if (v === null || v === undefined) return;
         fd.append(k, typeof v === "boolean" ? String(v) : String(v));
       });
+
       if (!isEdit) {
         fd.append("click_count", String(Math.floor(Math.random() * 201) + 400));
       }
+
       if (logoFile) fd.append("image", logoFile);
       if (proofFile) fd.append("proof_image", proofFile);
+
       const res = isEdit ? await updateCoupon(id, fd) : await addCoupon(fd);
       if (!res?.error) onClose?.();
     } finally {
@@ -211,64 +192,34 @@ export default function CouponModal({ id, onClose }) {
           {/* Store */}
           <div>
             <label className="block mb-1">Store</label>
-
-            {!isEdit ? (
-              <div className="relative">
-                <input
-                  ref={searchRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={onSearchKeyDown}
-                  placeholder="Type at least 3 characters…"
-                  className="w-full border px-3 py-2 rounded"
-                />
-                {searchLoading && (
-                  <div className="text-xs text-gray-500 mt-1">Searching…</div>
-                )}
-                {searchResults.length > 0 && (
-                  <div className="absolute z-10 bg-white border w-full max-h-60 overflow-y-auto">
-                    {searchResults.map((s, i) => (
-                      <div
-                        key={s.id}
-                        className={`px-3 py-2 cursor-pointer ${
-                          i === highlightIndex ? "bg-blue-100" : ""
-                        }`}
-                        onMouseDown={() => selectStore(s)}
-                      >
-                        {s.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : storesLoading ? (
-              <div className="text-gray-500 text-sm">Loading stores…</div>
-            ) : storesError ? (
-              <div className="text-red-500 text-sm">{storesError}</div>
-            ) : (
-              <select
-                value={form.store_id}
-                onChange={(e) => {
-                  const store = stores.find((s) => s.id === e.target.value);
-                  if (!store) return;
-                  setForm((prev) => ({
-                    ...prev,
-                    store_id: store.id,
-                    aff_url: store.aff_url || store.website || "",
-                    category_id: store.categories?.[0] || "",
-                  }));
-                  setAvailableCategories(store.categories || []);
-                }}
+            <div className="relative">
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={onSearchKeyDown}
+                placeholder="Type at least 3 characters…"
                 className="w-full border px-3 py-2 rounded"
-              >
-                <option value="">Select store</option>
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </select>
-            )}
+              />
+              {searchLoading && (
+                <div className="text-xs text-gray-500 mt-1">Searching…</div>
+              )}
+              {searchResults.length > 0 && (
+                <div className="absolute z-10 bg-white border w-full max-h-60 overflow-y-auto">
+                  {searchResults.map((s, i) => (
+                    <div
+                      key={s.id}
+                      className={`px-3 py-2 cursor-pointer ${
+                        i === highlightIndex ? "bg-blue-100" : ""
+                      }`}
+                      onMouseDown={() => selectStore(s)}
+                    >
+                      {s.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Coupon or Deal */}
