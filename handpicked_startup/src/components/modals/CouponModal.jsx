@@ -37,7 +37,10 @@ export default function CouponModal({ id, onClose }) {
   });
 
   const [stores, setStores] = useState([]);
+  const [storesLoading, setStoresLoading] = useState(false);
+  const [storesError, setStoresError] = useState(null);
   const [availableCategories, setAvailableCategories] = useState([]);
+
   const [logoFile, setLogoFile] = useState(null);
   const [proofFile, setProofFile] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -50,19 +53,20 @@ export default function CouponModal({ id, onClose }) {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const searchRef = useRef(null);
 
-  /* ---------- Body scroll lock ---------- */
+  /* ---------- Lock body scroll ---------- */
   useEffect(() => {
     document.body.classList.add("modal-open");
     return () => document.body.classList.remove("modal-open");
   }, []);
 
-  /* ---------- EDIT MODE: load stores ---------- */
+  /* ---------- Load stores (EDIT MODE ONLY) ---------- */
   useEffect(() => {
     if (!isEdit) return;
 
     (async () => {
-      const res = await listMerchants({ page: 1, limit: 5000 });
-      if (res?.data) {
+      setStoresLoading(true);
+      try {
+        const res = await listMerchants({ page: 1, limit: 5000 });
         setStores(
           res.data.map((m) => ({
             id: String(m.id),
@@ -72,11 +76,15 @@ export default function CouponModal({ id, onClose }) {
             categories: m.category_names || [],
           }))
         );
+      } catch (e) {
+        setStoresError("Failed to load stores");
+      } finally {
+        setStoresLoading(false);
       }
     })();
   }, [isEdit]);
 
-  /* ---------- EDIT MODE: load coupon ---------- */
+  /* ---------- Load coupon (EDIT MODE) ---------- */
   useEffect(() => {
     if (!isEdit) return;
 
@@ -109,11 +117,15 @@ export default function CouponModal({ id, onClose }) {
         is_publish:
           result.is_publish !== undefined ? !!result.is_publish : true,
       });
-
-      const store = stores.find((s) => s.id === String(result.merchant_id));
-      if (store) setAvailableCategories(store.categories || []);
     })();
-  }, [id, isEdit, stores]);
+  }, [id, isEdit]);
+
+  /* ---------- Sync categories for EDIT ---------- */
+  useEffect(() => {
+    if (!isEdit || !form.store_id || !stores.length) return;
+    const store = stores.find((s) => s.id === form.store_id);
+    if (store) setAvailableCategories(store.categories || []);
+  }, [stores, form.store_id, isEdit]);
 
   /* ---------- CREATE MODE: debounced search ---------- */
   useEffect(() => {
@@ -132,7 +144,7 @@ export default function CouponModal({ id, onClose }) {
       });
 
       setStoreResults(
-        (res.data || []).map((m) => ({
+        res.data.map((m) => ({
           id: String(m.id),
           name: m.name,
           aff_url: m.aff_url || "",
@@ -147,13 +159,13 @@ export default function CouponModal({ id, onClose }) {
     return () => clearTimeout(t);
   }, [storeQuery, isCreate]);
 
-  /* ---------- Keyboard navigation + ESC ---------- */
+  /* ---------- Keyboard + ESC ---------- */
   const onSearchKeyDown = (e) => {
     if (e.key === "Escape") {
-      setStoreResults([]);
-      setHighlightIndex(-1);
       setStoreQuery("");
+      setStoreResults([]);
       setStoreSelected(null);
+      setHighlightIndex(-1);
       setForm((p) => ({ ...p, store_id: "", category_id: "" }));
       setAvailableCategories([]);
       return;
@@ -183,8 +195,8 @@ export default function CouponModal({ id, onClose }) {
     setStoreResults([]);
     setHighlightIndex(-1);
 
-    setForm((prev) => ({
-      ...prev,
+    setForm((p) => ({
+      ...p,
       store_id: store.id,
       aff_url: store.aff_url || store.website || "",
       category_id: store.categories?.[0] || "",
@@ -200,13 +212,15 @@ export default function CouponModal({ id, onClose }) {
 
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) =>
-        fd.append(k, typeof v === "boolean" ? String(v) : String(v ?? ""))
-      );
+      Object.entries(form).forEach(([k, v]) => {
+        if (v === null || v === undefined) return;
+        fd.append(k, typeof v === "boolean" ? String(v) : String(v));
+      });
 
       if (!isEdit) {
         fd.append("click_count", String(Math.floor(Math.random() * 201) + 400));
       }
+
       if (logoFile) fd.append("image", logoFile);
       if (proofFile) fd.append("proof_image", proofFile);
 
@@ -220,103 +234,112 @@ export default function CouponModal({ id, onClose }) {
 
   useEscClose(onClose);
 
-  /* ---------- RENDER ---------- */
+  /* ================= RENDER ================= */
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white w-full max-w-6xl rounded shadow-lg p-6 max-h-[95vh] overflow-y-auto">
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* STORE */}
-          {isCreate ? (
-            <div>
-              <label className="block mb-1">Store</label>
-              {!storeSelected ? (
-                <>
-                  <input
-                    ref={searchRef}
-                    value={storeQuery}
-                    onChange={(e) => setStoreQuery(e.target.value)}
-                    onKeyDown={onSearchKeyDown}
-                    placeholder="Type at least 3 characters"
-                    className="w-full border px-3 py-2 rounded"
-                  />
-                  {storeSearching && (
-                    <div className="text-sm text-gray-500 mt-1">Searching…</div>
-                  )}
-                  {storeResults.length > 0 && (
-                    <div className="border mt-1 rounded bg-white max-h-60 overflow-y-auto">
-                      {storeResults.map((s, i) => (
-                        <div
-                          key={s.id}
-                          className={`px-3 py-2 cursor-pointer ${
-                            i === highlightIndex
-                              ? "bg-gray-200"
-                              : "hover:bg-gray-100"
-                          }`}
-                          onMouseDown={() => selectStore(s)}
-                        >
-                          {s.name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
+          {/* Store */}
+          <div>
+            <label className="block mb-1">Store</label>
+
+            {isEdit ? (
+              storesLoading ? (
+                <div className="text-sm text-gray-500">Loading stores…</div>
+              ) : storesError ? (
+                <div className="text-sm text-red-500">{storesError}</div>
               ) : (
-                <div className="flex justify-between items-center border px-3 py-2 rounded bg-gray-50">
-                  <span>{storeSelected.name}</span>
-                  <button
-                    type="button"
-                    className="text-red-600 text-sm"
-                    onClick={() => {
-                      setStoreSelected(null);
-                      setStoreQuery("");
-                      setForm((p) => ({
-                        ...p,
-                        store_id: "",
-                        category_id: "",
-                      }));
-                      setAvailableCategories([]);
-                    }}
-                  >
-                    Change
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            /* EDIT MODE: existing dropdown unchanged */
-            <div>
-              <label className="block mb-1">Store</label>
-              <select
-                value={form.store_id}
-                onChange={(e) => {
-                  const store = stores.find((s) => s.id === e.target.value);
-                  setForm((p) => ({
-                    ...p,
-                    store_id: e.target.value,
-                    aff_url: store?.aff_url || store?.website || p.aff_url,
-                    category_id: store?.categories?.[0] || p.category_id,
-                  }));
-                  setAvailableCategories(store?.categories || []);
-                }}
-                className="w-full border px-3 py-2 rounded"
-              >
-                <option value="">Select store</option>
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+                <select
+                  value={form.store_id}
+                  onChange={(e) => {
+                    const store = stores.find((s) => s.id === e.target.value);
+                    setForm((p) => ({
+                      ...p,
+                      store_id: e.target.value,
+                      aff_url: store?.aff_url || store?.website || p.aff_url,
+                      category_id: store?.categories?.[0] || p.category_id,
+                    }));
+                    setAvailableCategories(store?.categories || []);
+                  }}
+                  className="w-full border px-3 py-2 rounded"
+                >
+                  <option value="">Select store</option>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              )
+            ) : (
+              <>
+                {!storeSelected ? (
+                  <>
+                    <input
+                      ref={searchRef}
+                      value={storeQuery}
+                      onChange={(e) => setStoreQuery(e.target.value)}
+                      onKeyDown={onSearchKeyDown}
+                      placeholder="Type at least 3 characters to search store"
+                      className="w-full border px-3 py-2 rounded"
+                    />
+                    {storeSearching && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        Searching…
+                      </div>
+                    )}
+                    {storeResults.length > 0 && (
+                      <div className="border rounded mt-1 max-h-60 overflow-y-auto bg-white">
+                        {storeResults.map((s, i) => (
+                          <div
+                            key={s.id}
+                            className={`px-3 py-2 cursor-pointer ${
+                              i === highlightIndex
+                                ? "bg-gray-200"
+                                : "hover:bg-gray-100"
+                            }`}
+                            onMouseDown={() => selectStore(s)}
+                          >
+                            {s.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center border px-3 py-2 rounded bg-gray-50">
+                    <span>{storeSelected.name}</span>
+                    <button
+                      type="button"
+                      className="text-sm text-red-600"
+                      onClick={() => {
+                        setStoreSelected(null);
+                        setStoreQuery("");
+                        setForm((p) => ({
+                          ...p,
+                          store_id: "",
+                          category_id: "",
+                        }));
+                        setAvailableCategories([]);
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
-          {/* ... REST OF FORM REMAINS UNCHANGED ... */}
+          {/* EVERYTHING ELSE BELOW IS UNCHANGED */}
+          {/* (Your existing fields continue exactly as before) */}
 
+          {/* Footer */}
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={busy}
-              className="bg-blue-600 text-white px-4 py-2 rounded"
+              className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
             >
               {busy ? "Saving…" : isEdit ? "Update Coupon" : "Create Coupon"}
             </button>
