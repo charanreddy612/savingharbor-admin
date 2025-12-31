@@ -1,5 +1,5 @@
 // src/pages/coupons/CouponsValidationPage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { listMerchants } from "../services/merchantService.js";
 import {
   fetchMerchantProofs,
@@ -8,8 +8,12 @@ import {
 import AddProofModal from "../components/modals/AddProofModal.jsx";
 
 export default function CouponsValidationPage() {
-  const [merchants, setMerchants] = useState([]);
-  const [merchantSearch, setMerchantSearch] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const searchRef = useRef(null);
+
   const [selectedMerchant, setSelectedMerchant] = useState(null);
   const [proofs, setProofs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,34 +21,70 @@ export default function CouponsValidationPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
   const PAGE_SIZE = 10;
 
-  // Fetch merchants
+  /* ===========================
+     Merchant async search
+     =========================== */
   useEffect(() => {
+    if (search.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
     let mounted = true;
     (async () => {
-      try {
-        const { data } = await listMerchants({ page: 1, limit: 1000 });
-        if (!mounted) return;
-        setMerchants(data);
-      } catch (err) {
-        console.error("Failed to load merchants:", err);
-        setMerchants([]);
-      }
+      setSearchLoading(true);
+      const res = await listMerchants({ name: search, limit: 10 });
+      if (!mounted) return;
+      setSearchResults(
+        (res?.data || []).map((m) => ({
+          id: m.id,
+          name: m.name,
+          slug: m.slug,
+        }))
+      );
+      setHighlightIndex(-1);
+      setSearchLoading(false);
     })();
+
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [search]);
 
-  // Filtered merchants for search
-  const filteredMerchants = merchants.filter(
-    (m) =>
-      m.name?.toLowerCase().includes(merchantSearch.toLowerCase()) ||
-      m.slug?.toLowerCase().includes(merchantSearch.toLowerCase())
-  );
+  const selectMerchant = (m) => {
+    setSelectedMerchant(m);
+    setSearch(m.name || m.slug || "");
+    setSearchResults([]);
+    setPage(1);
+  };
 
-  // Fetch proofs for selected merchant with pagination
+  const onSearchKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex((i) => Math.min(i + 1, searchResults.length - 1));
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex((i) => Math.max(i - 1, 0));
+    }
+    if (e.key === "Enter" && highlightIndex >= 0) {
+      e.preventDefault();
+      selectMerchant(searchResults[highlightIndex]);
+    }
+    if (e.key === "Escape") {
+      setSearch("");
+      setSearchResults([]);
+      setHighlightIndex(-1);
+      setSelectedMerchant(null);
+    }
+  };
+
+  /* ===========================
+     Fetch proofs
+     =========================== */
   useEffect(() => {
     if (!selectedMerchant) {
       setProofs([]);
@@ -52,15 +92,19 @@ export default function CouponsValidationPage() {
       setTotalPages(1);
       return;
     }
+
     let mounted = true;
     setLoading(true);
+
     (async () => {
       const { data, error } = await fetchMerchantProofs(
         selectedMerchant.id,
         page,
         PAGE_SIZE
       );
+
       if (!mounted) return;
+
       if (!error) {
         setProofs(data.rows || []);
         setTotalPages(Math.ceil((data.total || 0) / PAGE_SIZE));
@@ -69,6 +113,7 @@ export default function CouponsValidationPage() {
       }
       setLoading(false);
     })();
+
     return () => {
       mounted = false;
     };
@@ -78,7 +123,6 @@ export default function CouponsValidationPage() {
     if (!window.confirm("Delete this proof?")) return;
     const { error } = await deleteProof(id);
     if (!error) setRefreshKey((k) => k + 1);
-    else console.error("Failed to delete proof:", error);
   };
 
   return (
@@ -96,32 +140,39 @@ export default function CouponsValidationPage() {
         )}
       </div>
 
-      {/* Merchant Selector with Search */}
+      {/* Merchant Search */}
       <div className="mb-4">
         <label className="block mb-2 font-medium">Search Merchant</label>
-        <input
-          type="text"
-          placeholder="Search by name or slug..."
-          value={merchantSearch}
-          onChange={(e) => setMerchantSearch(e.target.value)}
-          className="w-full border px-3 py-2 rounded mb-2"
-        />
-        <select
-          value={selectedMerchant?.id || ""}
-          onChange={(e) =>
-            setSelectedMerchant(
-              merchants.find((m) => m.id === Number(e.target.value)) || null
-            )
-          }
-          className="w-full border px-3 py-2 rounded"
-        >
-          <option value="">-- Select Merchant --</option>
-          {filteredMerchants.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name || m.slug}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Type at least 3 characters…"
+            className="w-full border px-3 py-2 rounded"
+          />
+
+          {searchLoading && (
+            <div className="text-xs text-gray-500 mt-1">Searching…</div>
+          )}
+
+          {searchResults.length > 0 && (
+            <div className="absolute z-10 bg-white border w-full max-h-60 overflow-y-auto">
+              {searchResults.map((m, i) => (
+                <div
+                  key={m.id}
+                  className={`px-3 py-2 cursor-pointer ${
+                    i === highlightIndex ? "bg-blue-100" : ""
+                  }`}
+                  onMouseDown={() => selectMerchant(m)}
+                >
+                  {m.name || m.slug}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Proofs Table */}
