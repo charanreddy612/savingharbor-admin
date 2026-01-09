@@ -1,5 +1,5 @@
 /**
- * Sync merchants from stores.xlsx into Supabase - OPTIMIZED VERSION
+ * Sync merchants from stores.xlsx into Supabase
  *
  * Reads:
  *  - store_name
@@ -25,7 +25,7 @@ import { supabase } from "../dbhelper/dbclient.js";
 /* =========================
    CONFIG
 ========================= */
-const STORES_XLSX = path.join(process.cwd(), "scripts/stores.xlsx");
+const STORES_XLSX = path.join(process.cwd(), "stores.xlsx");
 const BATCH_SIZE = 1000;
 
 /* =========================
@@ -374,11 +374,12 @@ async function run() {
   });
 
   // 2. BATCH FETCH ALL EXISTING MERCHANTS WITH PAGINATION
-  console.log("📦 Fetching existing merchants...");
+  console.log("\n📦 Fetching existing merchants from database...");
   
   let existingMerchants = [];
   let from = 0;
   const pageSize = 1000;
+  let pageNum = 1;
   
   while (true) {
     const { data, error: fetchErr } = await supabase
@@ -386,33 +387,53 @@ async function run() {
       .select("id, slug, brand_categories")
       .range(from, from + pageSize - 1);
 
-    if (fetchErr) throw fetchErr;
+    if (fetchErr) {
+      console.error("❌ Error fetching merchants:", fetchErr);
+      throw fetchErr;
+    }
     
-    if (!data || data.length === 0) break;
+    if (!data || data.length === 0) {
+      console.log(`   Page ${pageNum}: No more data`);
+      break;
+    }
     
     existingMerchants = existingMerchants.concat(data);
-    console.log(`   Fetched ${existingMerchants.length} existing merchants so far...`);
+    console.log(`   Page ${pageNum}: Fetched ${data.length} merchants (Total: ${existingMerchants.length})`);
     
-    if (data.length < pageSize) break;
+    if (data.length < pageSize) {
+      console.log(`   ✓ Reached last page`);
+      break;
+    }
+    
     from += pageSize;
+    pageNum++;
   }
 
-  // Create slug -> merchant map
+  // Create slug -> merchant map for fast lookup
   const existingMap = new Map();
   existingMerchants.forEach(m => {
     existingMap.set(m.slug, m);
   });
 
-  console.log(`✅ Loaded ${existingMerchants.length} existing merchants total`);
+  console.log(`✅ Total existing merchants loaded: ${existingMerchants.length}`);
+  console.log(`   Unique slugs in map: ${existingMap.size}`);
 
   // 3. PREPARE DATA FOR INSERT/UPDATE
   console.log("\n🔄 Analyzing what needs to be inserted/updated...");
   const merchantsToInsert = [];
   const merchantsToUpdate = [];
+  const slugsToInsert = new Set(); // Track slugs to prevent duplicates in insert batch
+  let unchangedCount = 0;
+  let duplicateSlugsInExcel = 0;
 
   for (const [storeName, { category, subcategories }] of merchantsMap.entries()) {
     const slug = slugify(storeName) + "-coupons";
-    const existing = existingMap.get(slug);
+    const existing = existingMap.get(slug);  // ← Duplicate check against DB
+    
+    // Debug the first few merchants
+    if (merchantsToInsert.length + merchantsToUpdate.length + unchangedCount < 3) {
+      console.log(`   Checking: "${storeName}" → slug: "${slug}" → exists: ${!!existing}`);
+    }
 
     const sideDesc = replacePlaceholders(sideDescriptionHTML, storeName, category);
     const descHTML = replacePlaceholders(descriptionHTML, storeName, category);
@@ -438,7 +459,7 @@ async function run() {
     );
 
     if (existing) {
-      // Merge existing subcategories with new ones
+      // DUPLICATE FOUND IN DB - Check if subcategories need updating
       const mergedSubcats = Array.from(
         new Set([...(existing.brand_categories || []), ...subcategories])
       );
@@ -450,9 +471,17 @@ async function run() {
           slug: slug,
           brand_categories: mergedSubcats,
         });
+      } else {
+        // Merchant exists and subcategories unchanged - skip
+        unchangedCount++;
       }
+    } else if (slugsToInsert.has(slug)) {
+      // DUPLICATE SLUG IN EXCEL - Skip to avoid batch insert failure
+      console.warn(`   ⚠️ Duplicate slug in Excel: "${slug}" from "${storeName}" (already queued for insert)`);
+      duplicateSlugsInExcel++;
     } else {
-      // New merchant to insert
+      // NEW MERCHANT - Not in database yet
+      slugsToInsert.add(slug); // Track this slug
       merchantsToInsert.push({
         name: storeName,
         slug,
@@ -484,12 +513,13 @@ async function run() {
     }
   }
 
-  const reusedCount = merchantsMap.size - merchantsToInsert.length - merchantsToUpdate.length;
-
   console.log(`\n📊 Processing Summary:`);
-  console.log(`   To insert: ${merchantsToInsert.length}`);
-  console.log(`   To update: ${merchantsToUpdate.length}`);
-  console.log(`   Unchanged: ${reusedCount}`);
+  console.log(`   New merchants to insert: ${merchantsToInsert.length}`);
+  console.log(`   Existing merchants to update: ${merchantsToUpdate.length}`);
+  console.log(`   Already in DB (unchanged): ${unchangedCount}`);
+  console.log(`   Duplicate slugs in Excel (skipped): ${duplicateSlugsInExcel}`);
+  console.log(`   Total processed: ${merchantsMap.size}`);
+  console.log(`   ✅ Duplicate check complete - no duplicates will be inserted`);
   
   // Sample data to insert
   if (merchantsToInsert.length > 0) {
@@ -512,17 +542,49 @@ async function run() {
   if (merchantsToInsert.length > 0) {
     console.log(`\n💾 Inserting ${merchantsToInsert.length} new merchants in batches...`);
     
+    // Debug: Check which merchant has the problematic slug
+    const problematicSlug = "flobeds-coupons";
+    const problematicMerchant = merchantsToInsert.find(m => m.slug === problematicSlug);
+    if (problematicMerchant) {
+      console.log(`   🔍 Found merchant with slug "${problematicSlug}":`);
+      console.log(`      Name: "${problematicMerchant.name}"`);
+      console.log(`      Slug: "${problematicMerchant.slug}"`);
+    }
+    
     const batches = chunkArray(merchantsToInsert, BATCH_SIZE);
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
+      
+      console.log(`\n   Attempting batch ${i + 1}/${batches.length} with ${batch.length} merchants...`);
+      
+      // Debug: Show first 3 slugs in this batch
+      console.log(`   First 3 slugs in batch:`);
+      batch.slice(0, 3).forEach((m, idx) => {
+        console.log(`      ${idx + 1}. ${m.slug} (from "${m.name}")`);
+      });
       
       const { error: insertErr } = await supabase
         .from("merchants")
         .insert(batch);
 
       if (insertErr) {
-        console.error(`❌ Insert batch ${i + 1}/${batches.length} failed:`, insertErr);
+        console.error(`❌ Batch ${i + 1}/${batches.length} failed:`, insertErr);
+        
+        // Try to find which specific merchant caused the error
+        if (insertErr.details && insertErr.details.includes('Key (slug)=')) {
+          const match = insertErr.details.match(/Key \(slug\)=\(([^)]+)\)/);
+          if (match) {
+            const failedSlug = match[1];
+            const failedMerchant = batch.find(m => m.slug === failedSlug);
+            if (failedMerchant) {
+              console.error(`   🔍 Failed merchant details:`);
+              console.error(`      Name: "${failedMerchant.name}"`);
+              console.error(`      Slug: "${failedMerchant.slug}"`);
+            }
+          }
+        }
+        
         throw insertErr;
       }
 
@@ -562,7 +624,7 @@ async function run() {
   console.log("\n✅ Merchants sync complete!");
   console.log(`   Inserted : ${insertedCount}`);
   console.log(`   Updated  : ${updatedCount}`);
-  console.log(`   Unchanged: ${reusedCount}`);
+//  console.log(`   Unchanged: ${reusedCount}`);
   console.log(`   Duration : ${duration}s`);
   console.log(`   Speed    : ${Math.round(merchantsMap.size / duration)} records/sec`);
 }
