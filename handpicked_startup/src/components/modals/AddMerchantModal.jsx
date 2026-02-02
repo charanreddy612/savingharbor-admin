@@ -33,13 +33,14 @@ export default function AddMerchantModal({ onClose, onSave }) {
     deals_home: false,
     tag_home: false,
     amazon_store: false,
-    active: false,
+    active: true,
     show_at_search_bar: false,
     extension_active: false,
     extension_mandatory: false,
     is_header_2: false, // second Is Header seen in grid
     coupon_icon_visibility: "visible", // visible | invisible
     store_status_visibility: "visible", // visible | invisible
+    is_publish: true,
   });
 
   const [logo, setLogo] = useState(null);
