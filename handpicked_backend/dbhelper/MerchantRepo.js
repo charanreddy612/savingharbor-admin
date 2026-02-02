@@ -183,8 +183,12 @@ export async function insert(payload) {
 // Update (drops undefined keys)
 export async function update(id, patch) {
   const clean = Object.fromEntries(
-    Object.entries(patch).filter(([, v]) => v !== undefined)
+    Object.entries(patch).filter(([, v]) => v !== undefined),
   );
+  console.log("=== REPO UPDATE ===");
+  console.log("Clean object:", JSON.stringify(clean, null, 2));
+  console.log("aff_url value:", clean.aff_url);
+
   if (Object.keys(clean).length === 0) {
     return await getById(id);
   }
@@ -194,6 +198,10 @@ export async function update(id, patch) {
     .eq("id", id)
     .select()
     .single();
+
+  console.log("Supabase response aff_url:", data?.aff_url);
+  console.log("Supabase error:", error);
+  console.log("===================");
   if (error) throw error;
   return data;
 }
