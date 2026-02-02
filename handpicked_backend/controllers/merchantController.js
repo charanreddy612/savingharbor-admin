@@ -120,14 +120,14 @@ export async function createMerchant(req, res) {
         "size",
         file.size,
         "buffer?",
-        !!file.buffer,
+        !!file.buffer
       );
       const { url, error } = await uploadImageBuffer(
         BUCKET,
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype,
+        file.mimetype
       );
       if (error)
         return res.status(500).json({
@@ -144,7 +144,7 @@ export async function createMerchant(req, res) {
         "size",
         file.size,
         "buffer?",
-        !!file.buffer,
+        !!file.buffer
       );
       0;
       const { url, error } = await uploadImageBuffer(
@@ -152,7 +152,7 @@ export async function createMerchant(req, res) {
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype,
+        file.mimetype
       );
       if (error)
         return res.status(500).json({
@@ -169,14 +169,14 @@ export async function createMerchant(req, res) {
         "size",
         file.size,
         "buffer?",
-        !!file.buffer,
+        !!file.buffer
       );
       const { url, error } = await uploadImageBuffer(
         BUCKET,
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype,
+        file.mimetype
       );
       if (error)
         return res.status(500).json({
@@ -214,8 +214,8 @@ export async function updateMerchant(req, res) {
         b.web_url !== undefined
           ? b.web_url
           : b.website !== undefined
-            ? b.website
-            : undefined,
+          ? b.website
+          : undefined,
       aff_url: b.aff_url !== undefined ? b.aff_url : undefined,
       tracker_lock:
         b.tracker_lock !== undefined ? toBool(b.tracker_lock) : undefined,
@@ -226,20 +226,20 @@ export async function updateMerchant(req, res) {
         b.seo_title !== undefined
           ? b.seo_title
           : b.meta_title !== undefined
-            ? b.meta_title
-            : undefined,
+          ? b.meta_title
+          : undefined,
       meta_keywords:
         b.seo_keywords !== undefined
           ? b.seo_keywords
           : b.meta_keywords !== undefined
-            ? b.meta_keywords
-            : undefined,
+          ? b.meta_keywords
+          : undefined,
       meta_description:
         b.seo_description !== undefined
           ? b.seo_description
           : b.meta_description !== undefined
-            ? b.meta_description
-            : undefined,
+          ? b.meta_description
+          : undefined,
 
       // content blocks
       side_description_html:
@@ -250,8 +250,8 @@ export async function updateMerchant(req, res) {
         b.description_html !== undefined
           ? b.description_html
           : b.description !== undefined
-            ? b.description
-            : undefined,
+          ? b.description
+          : undefined,
       table_content_html:
         b.table_content_html !== undefined ? b.table_content_html : undefined,
       ads_description_html:
@@ -346,14 +346,14 @@ export async function updateMerchant(req, res) {
         "size",
         file.size,
         "buffer?",
-        !!file.buffer,
+        !!file.buffer
       );
       const { url, error } = await uploadImageBuffer(
         BUCKET,
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype,
+        file.mimetype
       );
       if (error)
         return res.status(500).json({
@@ -370,14 +370,14 @@ export async function updateMerchant(req, res) {
         "size",
         file.size,
         "buffer?",
-        !!file.buffer,
+        !!file.buffer
       );
       const { url, error } = await uploadImageBuffer(
         BUCKET,
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype,
+        file.mimetype
       );
       if (error)
         return res.status(500).json({
@@ -394,14 +394,14 @@ export async function updateMerchant(req, res) {
         "size",
         file.size,
         "buffer?",
-        !!file.buffer,
+        !!file.buffer
       );
       const { url, error } = await uploadImageBuffer(
         BUCKET,
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype,
+        file.mimetype
       );
       if (error)
         return res.status(500).json({
@@ -410,14 +410,8 @@ export async function updateMerchant(req, res) {
         });
       patch.side_banner_url = url;
     }
-    console.log("=== UPDATE DEBUG ===");
-    console.log("Merchant ID:", id);
-    console.log("aff_url in body:", b.aff_url);
-    console.log("aff_url in patch:", patch.aff_url);
-    console.log("Full patch:", JSON.stringify(patch, null, 2));
+
     const updated = await merchantRepo.update(id, patch);
-    console.log("Updated result aff_url:", updated.aff_url);
-    console.log("===================");
     return res.json({ data: updated, error: null });
   } catch (err) {
     return res.status(500).json({
@@ -457,14 +451,14 @@ export async function deleteMerchant(req, res) {
         .json({ data: null, error: { message: "Merchant not found" } });
 
     const urls = [m.logo_url, m.top_banner_url, m.side_banner_url].filter(
-      Boolean,
+      Boolean
     );
     try {
       if (urls.length) await deleteFilesByUrls(BUCKET, urls);
     } catch (fileErr) {
       console.error(
         "Merchant file deletion failed:",
-        fileErr?.message || fileErr,
+        fileErr?.message || fileErr
       );
     }
 
@@ -498,7 +492,7 @@ export async function uploadBlogImage(req, res) {
       FOLDER,
       file.buffer,
       file.originalname,
-      file.mimetype,
+      file.mimetype
     );
 
     if (error) {
