@@ -10,7 +10,7 @@
  *  - coupons
  *
  * Safe to re-run (idempotent)
- *
+ * 
  * OPTIMIZATIONS:
  * 1. Batch fetch all merchants with pagination (no 1000 row limit)
  * 2. Batch fetch existing coupons at once
@@ -27,7 +27,7 @@ import { supabase } from "../dbhelper/dbclient.js";
 ========================= */
 
 const COUPONS_XLSX = path.join(process.cwd(), "coupons.xlsx");
-const BATCH_SIZE = 1000; // Supabase can handle 1000 rows per insert
+const BATCH_SIZE = 200; // Smaller batches for better resume-safety
 
 /* =========================
    DESCRIPTION TEMPLATES
@@ -65,14 +65,6 @@ function chunkArray(array, size) {
   return chunks;
 }
 
-function cleanName(name) {
-  return name
-    .toString()
-    .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width / BOM
-    .replace(/\s+/g, " ") // normalize spaces
-    .trim()
-    .toLowerCase();
-}
 /* =========================
    MAIN
 ========================= */
@@ -119,33 +111,33 @@ async function run() {
 
   // 2. BATCH FETCH ALL MERCHANTS WITH PAGINATION (NO 1000 ROW LIMIT)
   console.log("📦 Fetching all merchants...");
-
+  
   let allMerchants = [];
   let from = 0;
   const pageSize = 1000;
-
+  
   while (true) {
     const { data, error: merchantErr } = await supabase
       .from("merchants")
       .select("id, name, web_url")
-      .ilike("name", "Z%") // only names starting with P
+      .ilike("name", "F%")
       .range(from, from + pageSize - 1);
 
     if (merchantErr) throw merchantErr;
-
+    
     if (!data || data.length === 0) break;
-
+    
     allMerchants = allMerchants.concat(data);
     console.log(`   Fetched ${allMerchants.length} merchants so far...`);
-
+    
     if (data.length < pageSize) break;
     from += pageSize;
   }
 
   // Create a case-insensitive merchant lookup map
   const merchantMap = new Map();
-  allMerchants.forEach((m) => {
-    merchantMap.set(cleanName(m.name), m);
+  allMerchants.forEach(m => {
+    merchantMap.set(m.name.toLowerCase(), m);
   });
 
   console.log(`✅ Loaded ${allMerchants.length} merchants total`);
@@ -155,8 +147,8 @@ async function run() {
   const missingMerchants = new Set();
 
   for (const { store_name, coupon_type, title } of uniqueRows.values()) {
-    const merchant = merchantMap.get(cleanName(store_name));
-
+    const merchant = merchantMap.get(store_name.toLowerCase());
+    
     if (!merchant) {
       missingMerchants.add(store_name);
       continue;
@@ -172,24 +164,21 @@ async function run() {
   }
 
   if (missingMerchants.size > 0) {
-    console.warn(
-      `⚠️ ${missingMerchants.size} merchants not found:`,
-      [...missingMerchants].slice(0, 10).join(", ")
-    );
+    console.warn(`⚠️ ${missingMerchants.size} merchants not found:`, [...missingMerchants].slice(0, 10).join(", "));
   }
 
   console.log(`📝 Processing ${couponsToProcess.length} coupons`);
 
   // 4. BATCH FETCH EXISTING COUPONS
   console.log("🔍 Checking existing coupons...");
-
-  const merchantIds = [...new Set(couponsToProcess.map((c) => c.merchant_id))];
+  
+  const merchantIds = [...new Set(couponsToProcess.map(c => c.merchant_id))];
   const existingCouponsMap = new Map();
-
+  
   // Fetch existing coupons in batches (merchants might have many coupons)
   for (let i = 0; i < merchantIds.length; i += 100) {
     const batchIds = merchantIds.slice(i, i + 100);
-
+    
     const { data: existingCoupons, error: fetchErr } = await supabase
       .from("coupons")
       .select("id, merchant_id, coupon_type, title, coupon_code")
@@ -197,11 +186,10 @@ async function run() {
 
     if (fetchErr) throw fetchErr;
 
-    existingCoupons.forEach((c) => {
+    existingCoupons.forEach(c => {
       // Include coupon_code in the key to match original logic
       // For deals, coupon_code is "", for others it's null
-      const couponCodePart =
-        c.coupon_code === null ? "NULL" : c.coupon_code || "EMPTY";
+      const couponCodePart = c.coupon_code === null ? "NULL" : (c.coupon_code || "EMPTY");
       const key = `${c.merchant_id}||${c.coupon_type}||${c.title}||${couponCodePart}`;
       existingCouponsMap.set(key, c.id);
     });
@@ -216,7 +204,7 @@ async function run() {
     // Match the original duplicate check logic exactly
     const couponCodeForKey = coupon.coupon_type === "deal" ? "EMPTY" : "NULL";
     const key = `${coupon.merchant_id}||${coupon.coupon_type}||${coupon.title}||${couponCodeForKey}`;
-
+    
     if (!existingCouponsMap.has(key)) {
       couponsToInsert.push({
         merchant_id: coupon.merchant_id,
@@ -255,45 +243,73 @@ async function run() {
   console.log(`   To insert: ${couponsToInsert.length}`);
   console.log(`   Already exist: ${reusedCount}`);
 
-  // 6. BATCH INSERT NEW COUPONS
+  // 6. BATCH INSERT NEW COUPONS (RESUME-SAFE)
   if (couponsToInsert.length > 0) {
-    console.log(
-      `\n💾 Inserting ${couponsToInsert.length} new coupons in batches...`
-    );
-
+    console.log(`\n💾 Inserting ${couponsToInsert.length} new coupons in batches...`);
+    
     const batches = chunkArray(couponsToInsert, BATCH_SIZE);
     let insertedCount = 0;
+    let skippedCount = 0;
 
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-
-      const { error: insertErr } = await supabase.from("coupons").insert(batch);
+      
+      const { error: insertErr } = await supabase
+        .from("coupons")
+        .insert(batch);
 
       if (insertErr) {
-        console.error(`❌ Batch ${i + 1}/${batches.length} failed:`, insertErr);
-        throw insertErr;
+        // If batch fails due to duplicates, try inserting one by one
+        if (insertErr.code === '23505') {
+          console.warn(`   ⚠️ Batch ${i + 1}/${batches.length} has duplicates, inserting individually...`);
+          
+          for (const coupon of batch) {
+            const { error: singleErr } = await supabase
+              .from("coupons")
+              .insert(coupon);
+            
+            if (singleErr) {
+              if (singleErr.code === '23505') {
+                // Already exists, skip silently
+                skippedCount++;
+              } else {
+                // Real error, throw it
+                console.error(`   ❌ Failed to insert coupon:`, singleErr);
+                throw singleErr;
+              }
+            } else {
+              insertedCount++;
+            }
+          }
+          
+          console.log(`   ✓ Batch ${i + 1}/${batches.length} complete (inserted: ${insertedCount}, skipped duplicates: ${skippedCount})`);
+        } else {
+          // Non-duplicate error, throw it
+          console.error(`❌ Batch ${i + 1}/${batches.length} failed:`, insertErr);
+          throw insertErr;
+        }
+      } else {
+        // Batch succeeded
+        insertedCount += batch.length;
+        console.log(`   ✓ Batch ${i + 1}/${batches.length} complete (${insertedCount}/${couponsToInsert.length})`);
       }
-
-      insertedCount += batch.length;
-      console.log(
-        `   ✓ Batch ${i + 1}/${batches.length} complete (${insertedCount}/${
-          couponsToInsert.length
-        })`
-      );
+    }
+    
+    if (skippedCount > 0) {
+      console.log(`\n   ℹ️ Skipped ${skippedCount} coupons that were already in DB (resume from previous run)`);
     }
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
   console.log("\n✅ Coupon sync complete!");
-  console.log(`   Inserted : ${couponsToInsert.length}`);
+  console.log(`   Inserted : ${insertedCount || couponsToInsert.length}`);
   console.log(`   Reused   : ${reusedCount}`);
+  if (skippedCount > 0) {
+    console.log(`   Skipped (already in DB) : ${skippedCount}`);
+  }
   console.log(`   Duration : ${duration}s`);
-  console.log(
-    `   Speed    : ${Math.round(
-      couponsToProcess.length / duration
-    )} records/sec`
-  );
+  console.log(`   Speed    : ${Math.round(couponsToProcess.length / duration)} records/sec`);
 }
 
 run().catch((err) => {

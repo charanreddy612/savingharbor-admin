@@ -6,7 +6,7 @@ import sharp from "sharp";
 import { supabase } from "../dbhelper/dbclient.js";
 import { uploadImageBuffer } from "../services/storageService.js";
 
-const EXCEL_PATH = path.resolve(process.cwd(), "scripts/stores.xlsx");
+const EXCEL_PATH = path.resolve(process.cwd(), "stores.xlsx");
 const BUCKET = "merchant-images";
 const FOLDER = "merchants";
 
