@@ -27,7 +27,11 @@ export default function AddProofModal({ merchant, onClose, onSave }) {
 
     setSaving(true);
     const fd = new FormData();
-    files.forEach((f) => fd.append("proofs", f));
+    // files.forEach((f) => fd.append("proofs", f));
+    files.forEach((f) => {
+      const safeName = sanitizeFileName(f.name);
+      fd.append("proofs", f, safeName);
+    });
 
     try {
       const { data, error } = await uploadProofs(merchant.id, fd);
@@ -43,6 +47,14 @@ export default function AddProofModal({ merchant, onClose, onSave }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const sanitizeFileName = (name) => {
+    const ext = name.substring(name.lastIndexOf("."));
+    const base = name.substring(0, name.lastIndexOf("."));
+    // Replace anything that's not alphanumeric, hyphen, or underscore
+    const clean = base.replace(/[^a-zA-Z0-9_-]/g, "_");
+    return clean + ext;
   };
 
   useEscClose(onClose);

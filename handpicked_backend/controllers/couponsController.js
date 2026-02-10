@@ -102,7 +102,7 @@ export async function createCoupon(req, res) {
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype
+        file.mimetype,
       );
       if (error)
         return res.status(500).json({
@@ -118,7 +118,7 @@ export async function createCoupon(req, res) {
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype
+        file.mimetype,
       );
       if (error)
         return res.status(500).json({
@@ -160,10 +160,10 @@ export async function updateCoupon(req, res) {
       h_block: b.h_block ?? undefined,
       coupon_code:
         b.coupon_type === "coupon"
-          ? b.coupon_code ?? ""
+          ? (b.coupon_code ?? "")
           : b.coupon_type === "deal"
-          ? ""
-          : undefined,
+            ? ""
+            : undefined,
       aff_url: b.aff_url ?? undefined,
       description: b.description ?? undefined,
       filter_id:
@@ -205,7 +205,7 @@ export async function updateCoupon(req, res) {
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype
+        file.mimetype,
       );
       if (error)
         return res.status(500).json({
@@ -221,7 +221,7 @@ export async function updateCoupon(req, res) {
         FOLDER,
         file.buffer,
         file.originalname,
-        file.mimetype
+        file.mimetype,
       );
       if (error)
         return res.status(500).json({
@@ -354,7 +354,7 @@ export async function uploadMerchantProofs(req, res) {
         console.error(
           "Image conversion failed for",
           file.originalname,
-          convErr
+          convErr,
         );
         // fallback: use original buffer
         bufferToUpload = file.buffer;
@@ -365,14 +365,15 @@ export async function uploadMerchantProofs(req, res) {
       const base = (file.originalname || "upload").replace(/\.[^/.]+$/, "");
       const ext = ".webp";
       const upName = `${base}${ext}`;
+      const safeName = base.replace(/[^a-zA-Z0-9_-]/g, "_") + ext; // safe name for storage
 
       // upload to storage
       const { url, error: uploadErr } = await uploadImageBuffer(
         BUCKET || process.env.UPLOAD_BUCKET || "merchant-images",
         PROOF_FOLDER || "merchant-proofs",
         bufferToUpload,
-        upName,
-        "image/webp"
+        safeName,
+        "image/webp",
       );
 
       if (uploadErr) {
@@ -389,7 +390,7 @@ export async function uploadMerchantProofs(req, res) {
     // Use existing repo helper (bulk insert)
     const inserted = await CouponsRepo.uploadProofs(
       merchantId,
-      uploadedEntries
+      uploadedEntries,
     );
 
     return res.status(201).json({ data: inserted, error: null });
