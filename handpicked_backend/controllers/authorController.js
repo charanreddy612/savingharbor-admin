@@ -31,19 +31,39 @@ export async function getAuthor(req, res) {
 
 export async function createAuthor(req, res) {
   try {
-    const body = req.body || {};
-    if (!body.name || !String(body.name).trim()) {
-      return res
-        .status(400)
-        .json({ data: null, error: { message: "Name is required" } });
+    const b = req.body || {};
+
+    if (!b.name || !String(b.name).trim()) {
+      return res.status(400).json({
+        data: null,
+        error: { message: "Name is required" },
+      });
     }
+
     const created = await authorRepo.insert({
-      name: body.name,
-      email: body.email || null,
-      is_active: body.is_active !== undefined ? toBool(body.is_active) : true,
+      name: String(b.name).trim(),
+      email: b.email || null,
+      designation: b.designation || null,
+      experience_years:
+        b.experience_years !== undefined && b.experience_years !== null
+          ? Number(b.experience_years)
+          : null,
+      bio_html: b.bio_html || null,
+      same_as: Array.isArray(b.same_as) ? b.same_as : [],
+      is_content_author:
+        b.is_content_author !== undefined ? toBool(b.is_content_author) : true,
+      is_active: b.is_active !== undefined ? toBool(b.is_active) : true,
     });
+
     return res.status(201).json({ data: created, error: null });
   } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({
+        data: null,
+        error: { code: "23505", message: "Email already exists" },
+      });
+    }
+
     return res.status(500).json(toError(err, "Error creating author"));
   }
 }
@@ -52,14 +72,35 @@ export async function updateAuthor(req, res) {
   try {
     const { id } = req.params;
     const b = req.body || {};
+
     const patch = {
       name: b.name,
       email: b.email,
+      designation: b.designation,
+      experience_years:
+        b.experience_years !== undefined
+          ? Number(b.experience_years)
+          : undefined,
+      bio_html: b.bio_html,
+      same_as: Array.isArray(b.same_as) ? b.same_as : undefined,
+      is_content_author:
+        b.is_content_author !== undefined
+          ? toBool(b.is_content_author)
+          : undefined,
       is_active: b.is_active !== undefined ? toBool(b.is_active) : undefined,
     };
+
     const updated = await authorRepo.update(id, patch);
+
     return res.json({ data: updated, error: null });
   } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({
+        data: null,
+        error: { code: "23505", message: "Email already exists" },
+      });
+    }
+
     return res.status(500).json(toError(err, "Error updating author"));
   }
 }

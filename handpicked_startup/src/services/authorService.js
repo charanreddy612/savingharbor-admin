@@ -24,21 +24,45 @@ export async function getAuthor(id) {
   }
 }
 
+// export async function createAuthor(payload) {
+//   try {
+//     const res = await http.post("/authors", payload);
+//     return { data: res.data?.data ?? null, error: res.data?.error ?? null };
+//   } catch (err) {
+//     return { data: null, error: { message: err.message } };
+//   }
+// }
+
+// export async function updateAuthor(id, payload) {
+//   try {
+//     const res = await http.put(`/authors/${id}`, payload);
+//     return { data: res.data?.data ?? null, error: res.data?.error ?? null };
+//   } catch (err) {
+//     return { data: null, error: { message: err.message } };
+//   }
+// }
+
 export async function createAuthor(payload) {
   try {
     const res = await http.post("/authors", payload);
-    return { data: res.data?.data ?? null, error: res.data?.error ?? null };
+    return { data: res.data?.data ?? null, error: null };
   } catch (err) {
-    return { data: null, error: { message: err.message } };
+    const error = err.response?.data?.error || {
+      message: err.message,
+    };
+    return { data: null, error };
   }
 }
 
 export async function updateAuthor(id, payload) {
   try {
     const res = await http.put(`/authors/${id}`, payload);
-    return { data: res.data?.data ?? null, error: res.data?.error ?? null };
+    return { data: res.data?.data ?? null, error: null };
   } catch (err) {
-    return { data: null, error: { message: err.message } };
+    const error = err.response?.data?.error || {
+      message: err.message,
+    };
+    return { data: null, error };
   }
 }
 
