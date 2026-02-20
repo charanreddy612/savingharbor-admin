@@ -44,10 +44,8 @@ export default function ViewAuthorModal({ authorId, onClose }) {
           </p>
 
           <p>
-            <strong>Experience:</strong>{" "}
-            {a.experience_years !== null && a.experience_years !== undefined
-              ? `${a.experience_years} years`
-              : "—"}
+            <strong>Verifying Since:</strong>{" "}
+            {a.verifying_since || "—"}
           </p>
 
           <p>

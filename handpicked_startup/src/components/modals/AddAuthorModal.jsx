@@ -9,7 +9,7 @@ export default function AddAuthorModal({ onClose, onSave }) {
     name: "",
     email: "",
     designation: "",
-    experience_years: "",
+    verifying_since: "",
     bio_html: "",
     is_content_author: true,
     is_active: true,
@@ -55,14 +55,6 @@ export default function AddAuthorModal({ onClose, onSave }) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return "Invalid email format.";
 
-    if (
-      form.experience_years &&
-      (!Number.isInteger(Number(form.experience_years)) ||
-        Number(form.experience_years) < 0)
-    ) {
-      return "Experience must be a non-negative integer.";
-    }
-
     if (form.bio_html.length > MAX_BIO) {
       return `Bio must be <= ${MAX_BIO} characters.`;
     }
@@ -93,9 +85,7 @@ export default function AddAuthorModal({ onClose, onSave }) {
       name: form.name.trim(),
       email: form.email.trim(),
       designation: form.designation.trim() || null,
-      experience_years: form.experience_years
-        ? Number(form.experience_years)
-        : null,
+      verifying_since: form.verifying_since.trim() || null,
       bio_html: form.bio_html.trim() || null,
       same_as,
       is_content_author: form.is_content_author,
@@ -166,14 +156,14 @@ export default function AddAuthorModal({ onClose, onSave }) {
             />
           </div>
 
-          {/* Experience */}
+          {/* Verifying Since */}
           <div>
-            <label>Experience (Years)</label>
+            <label>Verifying Since (Year)</label>
             <input
-              name="experience_years"
+              name="verifying_since"
               type="number"
               min="0"
-              value={form.experience_years}
+              value={form.verifying_since}
               onChange={handleChange}
               className="w-full border px-3 py-2 rounded"
             />

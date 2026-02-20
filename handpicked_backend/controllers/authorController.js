@@ -44,10 +44,7 @@ export async function createAuthor(req, res) {
       name: String(b.name).trim(),
       email: b.email || null,
       designation: b.designation || null,
-      experience_years:
-        b.experience_years !== undefined && b.experience_years !== null
-          ? Number(b.experience_years)
-          : null,
+      verifying_since: b.verifying_since || null,
       bio_html: b.bio_html || null,
       same_as: Array.isArray(b.same_as) ? b.same_as : [],
       is_content_author:
@@ -77,10 +74,7 @@ export async function updateAuthor(req, res) {
       name: b.name,
       email: b.email,
       designation: b.designation,
-      experience_years:
-        b.experience_years !== undefined
-          ? Number(b.experience_years)
-          : undefined,
+      verifying_since: b.verifying_since,
       bio_html: b.bio_html,
       same_as: Array.isArray(b.same_as) ? b.same_as : undefined,
       is_content_author:
