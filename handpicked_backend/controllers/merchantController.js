@@ -104,7 +104,7 @@ export async function createMerchant(req, res) {
 
       // arrays (JSON)
       category_names: parseJSON(b.category_names, []),
-      brand_categories: parseJSON(b.brand_categories, []),
+      subcategories: parseJSON(b.subcategories, []),
       coupon_h2_blocks: parseJSON(b.coupon_h2_blocks, []),
       coupon_h3_blocks: parseJSON(b.coupon_h3_blocks, []),
       faqs: parseJSON(b.faqs, []),
@@ -308,9 +308,9 @@ export async function updateMerchant(req, res) {
         b.category_names !== undefined
           ? parseJSON(b.category_names, [])
           : undefined,
-      brand_categories:
-        b.brand_categories !== undefined
-          ? parseJSON(b.brand_categories, [])
+      subcategories:
+        b.subcategories !== undefined
+          ? parseJSON(b.subcategories, [])
           : undefined,
       coupon_h2_blocks:
         b.coupon_h2_blocks !== undefined

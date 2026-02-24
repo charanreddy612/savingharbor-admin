@@ -219,8 +219,8 @@ export default function ViewMerchantModal({ merchantId, onClose }) {
           </Field>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <Field label="Brand Categories">
-              {Array.isArray(m?.brand_categories) && m.brand_categories.length
-                ? m.brand_categories.join(", ")
+              {Array.isArray(m?.subcategories) && m.subcategories.length
+                ? m.subcategories.join(", ")
                 : "—"}
             </Field>
             <Field label="Ads Description (Label)">

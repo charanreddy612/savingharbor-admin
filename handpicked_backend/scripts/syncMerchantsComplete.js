@@ -279,7 +279,7 @@ async function ensureMerchant(data) {
     name: data.name,
     slug,
     category_names: [data.category],
-    brand_categories: data.subcategories,
+    subcategories: data.subcategories,
     meta_title: buildMetaTitle(data.name, data.category),
     side_description_html: replaceTemplates(
       SIDE_DESCRIPTION_HTML,
@@ -304,7 +304,7 @@ async function ensureMerchant(data) {
 
   const { data: existing } = await supabase
     .from("merchants")
-    .select("id, brand_categories")
+    .select("id, subcategories")
     .eq("slug", slug)
     .maybeSingle();
 

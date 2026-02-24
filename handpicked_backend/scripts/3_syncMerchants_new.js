@@ -418,7 +418,7 @@ async function run() {
   while (true) {
     const { data, error: fetchErr } = await supabase
       .from("merchants")
-      .select("id, slug, brand_categories, logo_url")
+      .select("id, slug, subcategories, logo_url")
       .ilike("name", "Z%") // only names starting with P
       .range(from, from + pageSize - 1);
 
@@ -512,18 +512,18 @@ async function run() {
     if (existing) {
       // DUPLICATE FOUND IN DB - Check if subcategories need updating
       const mergedSubcats = Array.from(
-        new Set([...(existing.brand_categories || []), ...subcategories])
+        new Set([...(existing.subcategories || []), ...subcategories])
       );
 
       // Only update if subcategories actually changed
       if (
         JSON.stringify(mergedSubcats.sort()) !==
-        JSON.stringify((existing.brand_categories || []).sort())
+        JSON.stringify((existing.subcategories || []).sort())
       ) {
         merchantsToUpdate.push({
           id: existing.id,
           slug: slug,
-          brand_categories: mergedSubcats,
+          subcategories: mergedSubcats,
         });
       } else {
         // Merchant exists and subcategories unchanged - skip
@@ -542,7 +542,7 @@ async function run() {
         name: storeName,
         slug,
         category_names: [category],
-        brand_categories: subcategories,
+        subcategories: subcategories,
         meta_title: metaTitle,
         meta_description: metaDescription,
         meta_keywords: metaKeywords,
@@ -587,7 +587,7 @@ async function run() {
     merchantsToInsert.slice(0, 3).forEach((m, i) => {
       console.log(
         `   ${i + 1}. ${m.name} | Slug: ${m.slug} | Subcats: ${
-          m.brand_categories.length
+          m.subcategories.length
         }`
       );
     });
@@ -599,7 +599,7 @@ async function run() {
     merchantsToUpdate.slice(0, 3).forEach((m, i) => {
       console.log(
         `   ${i + 1}. ID: ${m.id} | Slug: ${m.slug} | New subcats: ${
-          m.brand_categories.length
+          m.subcategories.length
         }`
       );
     });
@@ -691,7 +691,7 @@ async function run() {
         chunk.map((merchant) =>
           supabase
             .from("merchants")
-            .update({ brand_categories: merchant.brand_categories })
+            .update({ subcategories: merchant.subcategories })
             .eq("id", merchant.id)
         )
       );

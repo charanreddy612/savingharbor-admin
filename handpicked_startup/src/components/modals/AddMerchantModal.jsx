@@ -304,7 +304,7 @@ export default function AddMerchantModal({ onClose, onSave }) {
 
     // arrays as JSON
     fd.append("category_names", JSON.stringify(categories));
-    fd.append("brand_categories", JSON.stringify(brandCategories));
+    fd.append("subcategories", JSON.stringify(brandCategories));
     fd.append("coupon_h2_blocks", JSON.stringify(couponH2Blocks));
     fd.append("coupon_h3_blocks", JSON.stringify(couponH3Blocks));
     fd.append("faqs", JSON.stringify(faqs));

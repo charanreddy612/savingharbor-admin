@@ -86,7 +86,7 @@ export default function EditMerchantModal({ merchantId, onClose, onSave }) {
 
         setCategories(Array.isArray(m?.category_names) ? m.category_names : []);
         setBrandCategories(
-          Array.isArray(m?.brand_categories) ? m.brand_categories : []
+          Array.isArray(m?.subcategories) ? m.subcategories : []
         );
         setCouponH2Blocks(
           Array.isArray(m?.coupon_h2_blocks) ? m.coupon_h2_blocks : []
@@ -315,7 +315,7 @@ export default function EditMerchantModal({ merchantId, onClose, onSave }) {
     if (logo) fd.append("logo", logo);
 
     fd.append("category_names", JSON.stringify(categories));
-    fd.append("brand_categories", JSON.stringify(brandCategories));
+    fd.append("subcategories", JSON.stringify(brandCategories));
     fd.append("coupon_h2_blocks", JSON.stringify(couponH2Blocks));
     fd.append("coupon_h3_blocks", JSON.stringify(couponH3Blocks));
     fd.append("faqs", JSON.stringify(faqs));

@@ -303,7 +303,7 @@ async function ensureMerchant({ name, category, subcategories = [] }) {
 
   const { data: existing, error: selectErr } = await supabase
     .from("merchants")
-    .select("id, brand_categories")
+    .select("id, subcategories")
     .eq("slug", slug)
     .limit(1)
     .maybeSingle();
@@ -320,12 +320,12 @@ async function ensureMerchant({ name, category, subcategories = [] }) {
   if (existing?.id) {
     // Merge existing subcategories with new ones
     const mergedSubcats = Array.from(
-      new Set([...(existing.brand_categories || []), ...subcategories])
+      new Set([...(existing.subcategories || []), ...subcategories])
     );
 
     await supabase
       .from("merchants")
-      .update({ brand_categories: mergedSubcats })
+      .update({ subcategories: mergedSubcats })
       .eq("id", existing.id);
 
     return { id: existing.id, created: false };
@@ -353,7 +353,7 @@ async function ensureMerchant({ name, category, subcategories = [] }) {
       name,
       slug,
       category_names: [category],
-      brand_categories: subcategories,
+      subcategories: subcategories,
       meta_title: metaTitle,
       meta_description: metaDescription,
       meta_keywords: metaKeywords,
