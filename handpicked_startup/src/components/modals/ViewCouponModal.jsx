@@ -73,12 +73,7 @@ useEffect(() => {
           <KV k="H2/H3" v={data?.h_block || "-"} />
 
           {/* present & nullable in your response */}
-          <KV k="Filter" v={data?.filter_id ?? "-"} />
-          <KV k="Store Category" v={data?.category_id ?? "-"} />
-
           <KV k="Show proof?" v={data?.show_proof ? "Yes" : "No"} />
-          <KV k="Schedule Date" v={data?.starts_at?.slice(0, 10) || "-"} />
-          <KV k="Expiry Date" v={data?.ends_at?.slice(0, 10) || "-"} />
           <KV k="Editor Pick" v={data?.is_editor ? "Yes" : "No"} />
           <KV k="Editor order" v={data?.editor_order ?? 0} />
           <KV k="Coupon Style" v={data?.coupon_style || "-"} />
@@ -97,33 +92,6 @@ useEffect(() => {
             k="Updated"
             v={data?.updated_at?.slice(0, 19)?.replace("T", " ") || "-"}
           />
-
-          {/* Images */}
-          <div>
-            <div className="text-sm text-gray-600 mb-1">Coupon/Brand Image</div>
-            {data?.image_url ? (
-              <img
-                src={data.image_url}
-                alt="coupon"
-                className="max-w-full max-h-40 rounded border"
-              />
-            ) : (
-              <div className="text-sm text-gray-500">-</div>
-            )}
-          </div>
-
-          <div>
-            <div className="text-sm text-gray-600 mb-1">Proof Image</div>
-            {data?.proof_image_url ? (
-              <img
-                src={data.proof_image_url}
-                alt="proof"
-                className="max-w-full max-h-60 rounded border"
-              />
-            ) : (
-              <div className="text-sm text-gray-500">-</div>
-            )}
-          </div>
 
           {/* Description */}
           <div>

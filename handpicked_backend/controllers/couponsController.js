@@ -77,11 +77,8 @@ export async function createCoupon(req, res) {
         (b.coupon_type || "coupon") === "coupon" ? b.coupon_code || "" : "",
       aff_url: b.aff_url || "",
       description: b.description || "",
-      filter_id: b.filter_id ? Number(b.filter_id) : null,
       category_id: b.category_id ? Number(b.category_id) : null,
       show_proof: toBool(b.show_proof),
-      ends_at: b.expiry_date || null,
-      starts_at: b.schedule_date || null,
       is_editor: toBool(b.editor_pick),
       editor_order: toInt(b.editor_order || 0, 0),
       coupon_style: b.coupon_style || "custom",
@@ -94,39 +91,6 @@ export async function createCoupon(req, res) {
       is_publish: b.is_publish,
       click_count: b.click_count ? Number(b.click_count) : 0,
     };
-
-    if (f.image?.[0]) {
-      const file = f.image[0];
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype,
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Image upload failed", details: error },
-        });
-      payload.image_url = url;
-    }
-    if (f.proof_image?.[0]) {
-      const file = f.proof_image[0];
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype,
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Proof image upload failed", details: error },
-        });
-      payload.proof_image_url = url;
-    }
 
     const created = await CouponsRepo.insert(payload);
     return res.status(201).json({ data: created, error: null });
@@ -166,22 +130,7 @@ export async function updateCoupon(req, res) {
             : undefined,
       aff_url: b.aff_url ?? undefined,
       description: b.description ?? undefined,
-      filter_id:
-        b.filter_id !== undefined
-          ? b.filter_id
-            ? Number(b.filter_id)
-            : null
-          : undefined,
-      category_id:
-        b.category_id !== undefined
-          ? b.category_id
-            ? Number(b.category_id)
-            : null
-          : undefined,
       show_proof: b.show_proof !== undefined ? toBool(b.show_proof) : undefined,
-      ends_at: b.expiry_date !== undefined ? b.expiry_date || null : undefined,
-      starts_at:
-        b.schedule_date !== undefined ? b.schedule_date || null : undefined,
       is_editor:
         b.editor_pick !== undefined ? toBool(b.editor_pick) : undefined,
       editor_order:
@@ -197,39 +146,6 @@ export async function updateCoupon(req, res) {
       is_brand_coupon:
         b.is_brand_coupon !== undefined ? toBool(b.is_brand_coupon) : undefined,
     };
-
-    if (f.image?.[0]) {
-      const file = f.image[0];
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype,
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Image upload failed", details: error },
-        });
-      patch.image_url = url;
-    }
-    if (f.proof_image?.[0]) {
-      const file = f.proof_image[0];
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype,
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Proof image upload failed", details: error },
-        });
-      patch.proof_image_url = url;
-    }
 
     const updated = await CouponsRepo.update(id, patch);
     return res.json({ data: updated, error: null });

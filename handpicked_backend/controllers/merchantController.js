@@ -79,9 +79,9 @@ export async function createMerchant(req, res) {
       // content blocks
       side_description_html: b.side_description_html || "",
       description_html: b.description_html || b.description || "",
-      table_content_html: b.table_content_html || "",
-      ads_description_html: b.ads_description_html || "",
-      ads_description_label: b.ads_description_label || "",
+      // table_content_html: b.table_content_html || "",
+      // ads_description_html: b.ads_description_html || "",
+      // ads_description_label: b.ads_description_label || "",
 
       // flags
       sidebar: toBool(b.sidebar),
@@ -135,55 +135,6 @@ export async function createMerchant(req, res) {
           error: { message: "Logo upload failed", details: error },
         });
       toInsert.logo_url = url;
-    }
-    if (f.top_banner?.[0]) {
-      const file = f.top_banner[0];
-      console.log(
-        "uploading",
-        file.originalname,
-        "size",
-        file.size,
-        "buffer?",
-        !!file.buffer
-      );
-      0;
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Top banner upload failed", details: error },
-        });
-      toInsert.top_banner_url = url;
-    }
-    if (f.side_banner?.[0]) {
-      const file = f.side_banner[0];
-      console.log(
-        "uploading",
-        file.originalname,
-        "size",
-        file.size,
-        "buffer?",
-        !!file.buffer
-      );
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Side banner upload failed", details: error },
-        });
-      toInsert.side_banner_url = url;
     }
 
     const created = await merchantRepo.insert(toInsert);
@@ -252,16 +203,16 @@ export async function updateMerchant(req, res) {
           : b.description !== undefined
           ? b.description
           : undefined,
-      table_content_html:
-        b.table_content_html !== undefined ? b.table_content_html : undefined,
-      ads_description_html:
-        b.ads_description_html !== undefined
-          ? b.ads_description_html
-          : undefined,
-      ads_description_label:
-        b.ads_description_label !== undefined
-          ? b.ads_description_label
-          : undefined,
+      // table_content_html:
+      //   b.table_content_html !== undefined ? b.table_content_html : undefined,
+      // ads_description_html:
+      //   b.ads_description_html !== undefined
+      //     ? b.ads_description_html
+      //     : undefined,
+      // ads_description_label:
+      //   b.ads_description_label !== undefined
+      //     ? b.ads_description_label
+      //     : undefined,
 
       // flags
       sidebar: b.sidebar !== undefined ? toBool(b.sidebar) : undefined,
@@ -334,8 +285,8 @@ export async function updateMerchant(req, res) {
 
     // Explicit removals
     if (toBool(b.remove_logo)) patch.logo_url = null;
-    if (toBool(b.remove_top_banner)) patch.top_banner_url = null;
-    if (toBool(b.remove_side_banner)) patch.side_banner_url = null;
+    // if (toBool(b.remove_top_banner)) patch.top_banner_url = null;
+    // if (toBool(b.remove_side_banner)) patch.side_banner_url = null;
 
     // New files overwrite
     if (f.logo?.[0]) {
@@ -362,54 +313,54 @@ export async function updateMerchant(req, res) {
         });
       patch.logo_url = url;
     }
-    if (f.top_banner?.[0]) {
-      const file = f.top_banner[0];
-      console.log(
-        "uploading",
-        file.originalname,
-        "size",
-        file.size,
-        "buffer?",
-        !!file.buffer
-      );
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Top banner upload failed", details: error },
-        });
-      patch.top_banner_url = url;
-    }
-    if (f.side_banner?.[0]) {
-      const file = f.side_banner[0];
-      console.log(
-        "uploading",
-        file.originalname,
-        "size",
-        file.size,
-        "buffer?",
-        !!file.buffer
-      );
-      const { url, error } = await uploadImageBuffer(
-        BUCKET,
-        FOLDER,
-        file.buffer,
-        file.originalname,
-        file.mimetype
-      );
-      if (error)
-        return res.status(500).json({
-          data: null,
-          error: { message: "Side banner upload failed", details: error },
-        });
-      patch.side_banner_url = url;
-    }
+    // if (f.top_banner?.[0]) {
+    //   const file = f.top_banner[0];
+    //   console.log(
+    //     "uploading",
+    //     file.originalname,
+    //     "size",
+    //     file.size,
+    //     "buffer?",
+    //     !!file.buffer
+    //   );
+    //   const { url, error } = await uploadImageBuffer(
+    //     BUCKET,
+    //     FOLDER,
+    //     file.buffer,
+    //     file.originalname,
+    //     file.mimetype
+    //   );
+    //   if (error)
+    //     return res.status(500).json({
+    //       data: null,
+    //       error: { message: "Top banner upload failed", details: error },
+    //     });
+    //   patch.top_banner_url = url;
+    // }
+    // if (f.side_banner?.[0]) {
+    //   const file = f.side_banner[0];
+    //   console.log(
+    //     "uploading",
+    //     file.originalname,
+    //     "size",
+    //     file.size,
+    //     "buffer?",
+    //     !!file.buffer
+    //   );
+    //   const { url, error } = await uploadImageBuffer(
+    //     BUCKET,
+    //     FOLDER,
+    //     file.buffer,
+    //     file.originalname,
+    //     file.mimetype
+    //   );
+    //   if (error)
+    //     return res.status(500).json({
+    //       data: null,
+    //       error: { message: "Side banner upload failed", details: error },
+    //     });
+    //   patch.side_banner_url = url;
+    // }
 
     const updated = await merchantRepo.update(id, patch);
     return res.json({ data: updated, error: null });
@@ -450,7 +401,7 @@ export async function deleteMerchant(req, res) {
         .status(404)
         .json({ data: null, error: { message: "Merchant not found" } });
 
-    const urls = [m.logo_url, m.top_banner_url, m.side_banner_url].filter(
+    const urls = [m.logo_url].filter(
       Boolean
     );
     try {

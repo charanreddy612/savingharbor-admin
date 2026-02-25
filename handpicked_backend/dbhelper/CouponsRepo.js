@@ -24,7 +24,7 @@ export async function list({
 
   // Base select with merchant join fields useful for UI
   const selectCols =
-    "id, merchant_id, coupon_type, coupon_code, title, description, type_text, is_editor, is_publish, starts_at, ends_at, created_at, image_url, proof_image_url";
+    "id, merchant_id, coupon_type, coupon_code, title, description, is_editor, is_publish, created_at,";
 
   let query = supabase
     .from("coupons")
