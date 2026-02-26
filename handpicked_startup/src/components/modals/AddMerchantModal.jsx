@@ -22,9 +22,6 @@ export default function AddMerchantModal({ onClose, onSave }) {
     seo_description: "",
     side_description_html: "",
     description_html: "",
-    table_content_html: "",
-    ads_description_html: "",
-    ads_description_label: "",
     sidebar: false,
     home: false,
     ads_block_all: false,
@@ -117,26 +114,7 @@ export default function AddMerchantModal({ onClose, onSave }) {
       setCategories((arr) => [...arr, v]);
     }
     setForm((f) => ({ ...f, category_input: "" }));
-
-    // Optional: persist new category to backend and add to allCategories
-    // Uncomment & edit endpoint if you'd like to create categories server-side:
-    /*
-    try {
-      const resp = await fetch('/api/merchant-categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: v })
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        const cname = data?.data?.name ?? v;
-        setAllCategories(prev => prev.includes(cname) ? prev : [...prev, cname]);
-      }
-    } catch (err) {
-      console.warn('persist category failed (non-fatal):', err);
-    }
-    */
-  };
+ };
 
   const removeCategory = (v) => {
     setCategories((arr) => arr.filter((x) => x !== v));
@@ -235,9 +213,6 @@ export default function AddMerchantModal({ onClose, onSave }) {
       seo_description: "",
       side_description_html: "",
       description_html: "",
-      table_content_html: "",
-      ads_description_html: "",
-      ads_description_label: "",
       sidebar: false,
       home: false,
       ads_block_all: false,
@@ -281,9 +256,6 @@ export default function AddMerchantModal({ onClose, onSave }) {
     fd.append("seo_description", form.seo_description || "");
     fd.append("side_description_html", form.side_description_html || "");
     fd.append("description_html", form.description_html || "");
-    fd.append("table_content_html", form.table_content_html || "");
-    fd.append("ads_description_html", form.ads_description_html || "");
-    fd.append("ads_description_label", form.ads_description_label || "");
     fd.append("sidebar", String(!!form.sidebar));
     fd.append("home", String(!!form.home));
     fd.append("ads_block_all", String(!!form.ads_block_all));
@@ -684,28 +656,6 @@ export default function AddMerchantModal({ onClose, onSave }) {
               />
             </div>
           </div>
-          <div>
-            <label className="block mb-1">Table Content</label>
-            <textarea
-              name="table_content_html"
-              value={form.table_content_html}
-              onChange={handleChange}
-              rows={4}
-              className="w-full border px-3 py-2 rounded"
-            />
-          </div>
-
-          {/* Ads Description + Brand Category */}
-          <div>
-            <label className="block mb-1">Ads Description</label>
-            <textarea
-              name="ads_description_html"
-              value={form.ads_description_html}
-              onChange={handleChange}
-              rows={4}
-              className="w-full border px-3 py-2 rounded"
-            />
-          </div>
 
           <div>
             <div className="flex gap-2 items-end">
@@ -744,15 +694,6 @@ export default function AddMerchantModal({ onClose, onSave }) {
                 ))}
               </div>
             )}
-            <div className="mt-3">
-              <label className="block mb-1">Ads Description</label>
-              <input
-                name="ads_description_label"
-                value={form.ads_description_label}
-                onChange={handleChange}
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
           </div>
 
           {/* Toggles grid */}
