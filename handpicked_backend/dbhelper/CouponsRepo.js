@@ -12,8 +12,6 @@ export async function list({
   store_id,
   type = "",
   status = "",
-  category_id,
-  filter = "",
   from_date = "",
   to_date = "",
   page = 1,
@@ -24,7 +22,7 @@ export async function list({
 
   // Base select with merchant join fields useful for UI
   const selectCols =
-    "id, merchant_id, coupon_type, coupon_code, title, description, is_editor, is_publish, created_at,";
+    "id, merchant_id, coupon_type, coupon_code, title, description, is_editor, is_publish, created_at";
 
   let query = supabase
     .from("coupons")

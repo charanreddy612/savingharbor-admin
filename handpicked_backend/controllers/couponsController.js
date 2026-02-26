@@ -24,10 +24,6 @@ export async function listCoupons(req, res) {
       store_id: req.query.store_id ? Number(req.query.store_id) : undefined,
       type: req.query.type || "",
       status: req.query.status || "",
-      category_id: req.query.category_id
-        ? Number(req.query.category_id)
-        : undefined,
-      filter: req.query.filter || "",
       from_date: req.query.from_date || "",
       to_date: req.query.to_date || "",
       page: Math.max(1, toInt(req.query.page || 1, 1)),
