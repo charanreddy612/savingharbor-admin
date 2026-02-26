@@ -73,7 +73,6 @@ export async function createCoupon(req, res) {
         (b.coupon_type || "coupon") === "coupon" ? b.coupon_code || "" : "",
       aff_url: b.aff_url || "",
       description: b.description || "",
-      category_id: b.category_id ? Number(b.category_id) : null,
       show_proof: toBool(b.show_proof),
       is_editor: toBool(b.editor_pick),
       editor_order: toInt(b.editor_order || 0, 0),
