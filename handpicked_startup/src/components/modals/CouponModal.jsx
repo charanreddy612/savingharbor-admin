@@ -18,11 +18,7 @@ export default function CouponModal({ id, onClose }) {
     coupon_code: "",
     aff_url: "",
     description: "",
-    filter_id: "",
-    category_id: "",
     show_proof: false,
-    expiry_date: "",
-    schedule_date: "",
     editor_pick: false,
     editor_order: 0,
     coupon_style: "custom",
@@ -68,11 +64,7 @@ export default function CouponModal({ id, onClose }) {
         coupon_code: result.coupon_code || "",
         aff_url: result.aff_url || result.url || "",
         description: result.description || "",
-        filter_id: String(result.filter_id ?? ""),
-        category_id: String(result.category_id ?? ""),
         show_proof: Boolean(result.show_proof),
-        expiry_date: result.ends_at?.slice(0, 10) || "",
-        schedule_date: result.starts_at?.slice(0, 10) || "",
         editor_pick: Boolean(result.is_editor),
         editor_order: Number(result.editor_order ?? 0),
         coupon_style: result.coupon_style || "custom",
@@ -121,7 +113,6 @@ export default function CouponModal({ id, onClose }) {
       ...prev,
       store_id: store.id,
       aff_url: store.aff_url || store.website || "",
-      category_id: store.categories?.[0] || "",
     }));
     setAvailableCategories(store.categories || []);
     setSearch(store.name);
@@ -163,9 +154,6 @@ export default function CouponModal({ id, onClose }) {
       if (!isEdit) {
         fd.append("click_count", String(Math.floor(Math.random() * 201) + 400));
       }
-
-      if (logoFile) fd.append("image", logoFile);
-      if (proofFile) fd.append("proof_image", proofFile);
 
       const res = isEdit ? await updateCoupon(id, fd) : await addCoupon(fd);
       if (!res?.error) onClose?.();
@@ -295,104 +283,6 @@ export default function CouponModal({ id, onClose }) {
               }
               className="w-full border px-3 py-2 rounded"
             />
-          </div>
-
-          {/* Coupon or Brand Image */}
-          <div>
-            <label className="block mb-1">Coupon or Brand Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-              className="block"
-            />
-            <div className="text-xs text-gray-500 mt-1">
-              jpg & png image only; max-width:122px; max-height:54px;
-              max-size:2MB
-            </div>
-          </div>
-
-          {/* Filter */}
-          <div>
-            <label className="block mb-1">Filter</label>
-            <select
-              value={form.filter_id}
-              onChange={(e) => setForm({ ...form, filter_id: e.target.value })}
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">None Selected</option>
-              {/* TODO: populate filters */}
-            </select>
-          </div>
-
-          {/* Store Category */}
-          <div>
-            <label className="block mb-1">Store Category</label>
-            <select
-              value={form.category_id}
-              onChange={(e) =>
-                setForm({ ...form, category_id: e.target.value })
-              }
-              className="w-full border px-3 py-2 rounded"
-            >
-              <option value="">Select category</option>
-              {availableCategories.map((cat, idx) => (
-                <option key={idx} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Proof image + Show proof */}
-          <div>
-            <label className="block mb-1">Proof image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-              className="block"
-            />
-            <div className="text-xs text-gray-500 mt-1">
-              jpg & png image only; max-width:650px; max-height:350px;
-              max-size:2MB
-            </div>
-            <label className="inline-flex items-center gap-2 mt-2">
-              <input
-                type="checkbox"
-                checked={form.show_proof}
-                onChange={(e) =>
-                  setForm({ ...form, show_proof: e.target.checked })
-                }
-              />
-              <span>Show proof?</span>
-            </label>
-          </div>
-
-          {/* Expiry/Schedule */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1">Expiry Date</label>
-              <input
-                type="date"
-                value={form.expiry_date}
-                onChange={(e) =>
-                  setForm({ ...form, expiry_date: e.target.value })
-                }
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="block mb-1">Schedule Date</label>
-              <input
-                type="date"
-                value={form.schedule_date}
-                onChange={(e) =>
-                  setForm({ ...form, schedule_date: e.target.value })
-                }
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
           </div>
 
           {/* Editor pick + order */}
