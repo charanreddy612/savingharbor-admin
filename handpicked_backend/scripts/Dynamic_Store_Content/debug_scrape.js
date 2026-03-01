@@ -1,298 +1,272 @@
 /**
- * Scrape Debugger
- * Runs the scraper on a single store URL and shows exactly what was extracted
+ * Scrape Debugger v2
+ * Tests the full data collection pipeline on a single store
  *
- * Run: node scripts/Dynamic_Store_Content/debug_scrape.js https://storeurl.com
- * Or by merchant slug: node scripts/Dynamic_Store_Content/debug_scrape.js --slug=trading-computers
+ * Run: node scripts/Dynamic_Store_Content/debug_scrape.js https://feelingirl.com
+ *   or node scripts/Dynamic_Store_Content/debug_scrape.js --slug=feelingirl
  */
 
-import * as cheerio from 'cheerio';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
 import { supabase } from "../../dbhelper/dbclient.js";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import { discoverUrls, printDiscovery } from "./url_discoverer.js";
+import {
+  extractContentWithFallback,
+  extractHomepage,
+  hasUsefulContent,
+} from "./content_extractor.js";
+import { scrapeTrustpilot } from "./trustpilot_scraper.js";
+import { scrapeReddit } from "./reddit_scraper.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(__dirname, '../../.env') });
+dotenv.config({ path: resolve(__dirname, "../../.env") });
 
 
 const args = process.argv.slice(2);
-const slugArg = args.find(a => a.startsWith('--slug='))?.split('=')[1];
-const urlArg  = args.find(a => !a.startsWith('--'));
+const slugArg = args.find((a) => a.startsWith("--slug="))?.split("=")[1];
+const urlArg = args.find((a) => !a.startsWith("--"));
+const DUMP_HTML = args.includes('--dump');
 
-const TIMEOUT_MS = 12000;
-
-const SCRAPE_PATHS = [
-  '/',
-  '/about', '/about-us', '/our-story', '/who-we-are',
-  '/faq', '/faqs', '/help', '/help-center', '/support',
-  '/shipping', '/shipping-policy', '/delivery',
-  '/returns', '/return-policy', '/refund-policy',
-  '/sale', '/offers', '/promotions', '/deals',
-  '/financing',
-];
-
-// ─── Fetch ────────────────────────────────────────────────────────────────────
-
-async function fetchPage(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; SavingHarborBot/1.0)',
-        'Accept': 'text/html',
-      },
-    });
-    clearTimeout(timer);
-    if (!res.ok) {
-      console.log(`    ↳ ${url} → ${res.status} ${res.statusText}`);
-      return null;
-    }
-    console.log(`    ↳ ${url} → ✓ ${res.status}`);
-    return await res.text();
-  } catch (e) {
-    clearTimeout(timer);
-    console.log(`    ↳ ${url} → ✗ ${e.message}`);
-    return null;
-  }
+function section(title) {
+  console.log(`\n${"═".repeat(55)}`);
+  console.log(`  ${title}`);
+  console.log("═".repeat(55));
 }
 
-// ─── Extract ──────────────────────────────────────────────────────────────────
-
-function extractFaqs($) {
-  const faqs = [];
-
-  $('[class*="faq"], [class*="accordion"], [class*="question"], [itemtype*="FAQPage"]').each((_, el) => {
-    const q = $(el).find('[class*="question"], [itemprop="name"], dt, summary, h3, h4').first().text().trim();
-    const a = $(el).find('[class*="answer"], [itemprop="text"], dd, [class*="content"], p').first().text().trim();
-    if (q.length > 10 && a.length > 20) faqs.push({ q, a, source: 'class-pattern' });
-  });
-
-  $('dl').each((_, dl) => {
-    $(dl).find('dt').each((_, dt) => {
-      const q = $(dt).text().trim();
-      const a = $(dt).next('dd').text().trim();
-      if (q.length > 10 && a.length > 20) faqs.push({ q, a, source: 'dl/dt/dd' });
-    });
-  });
-
-  $('main h3, main h4, article h3, article h4').each((_, el) => {
-    const q = $(el).text().trim();
-    const a = $(el).next('p').text().trim();
-    if (q.endsWith('?') && a.length > 20) faqs.push({ q, a, source: 'h3/h4+p' });
-  });
-
-  const seen = new Set();
-  return faqs.filter(f => {
-    if (seen.has(f.q)) return false;
-    seen.add(f.q);
-    return true;
-  }).slice(0, 10);
+function sub(title) {
+  console.log(`\n  ── ${title} ──`);
 }
-
-function extractFromHtml(html, path) {
-  const $ = cheerio.load(html);
-  $('script, style, nav, footer, noscript, iframe').remove();
-
-  const text = $('body').text();
-
-  const result = {
-    path,
-    status: 'ok',
-    metaDescription:  $('meta[name="description"]').attr('content') || null,
-    ogDescription:    $('meta[property="og:description"]').attr('content') || null,
-    h1:               $('h1').first().text().trim() || null,
-    taglines:         [],
-    productHeadings:  [],
-    keyParagraphs:    [],
-    faqs:             [],
-    salePatterns:     [],
-    visiblePromoCodes:[],
-    trustSignals:     {},
-    specialOffers:    {},
-  };
-
-  $('h2, .hero p, [class*="tagline"], [class*="subtitle"], [class*="hero"] p, [class*="banner"] p').each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 15 && t.length < 250) result.taglines.push(t);
-  });
-  result.taglines = result.taglines.slice(0, 5);
-
-  $('main h2, main h3, article h2, article h3, .content h2, .content h3').each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 3 && t.length < 80) result.productHeadings.push(t);
-  });
-  result.productHeadings = [...new Set(result.productHeadings)].slice(0, 12);
-
-  $('main p, article p, .about p, [class*="description"] p, [class*="content"] p, section p').each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 60 && t.length < 800) result.keyParagraphs.push(t);
-  });
-  result.keyParagraphs = result.keyParagraphs.slice(0, 8);
-
-  result.faqs = extractFaqs($);
-
-  const seasonal = text.match(/(black friday|cyber monday|summer sale|winter sale|spring sale|holiday sale|flash sale|clearance)[^.]{0,80}/gi) || [];
-  result.salePatterns = [...new Set(seasonal.slice(0, 5).map(s => s.trim()))];
-
-  result.trustSignals = {
-    yearsInBusiness:       (text.match(/(since|founded|est\.?)\s*(\d{4})/i) || text.match(/(\d+)\s*years?\s*(of\s*)?(experience|in business)/i) || [])[0]?.trim() || null,
-    returnWindow:          (text.match(/(\d+)[- ]day\s*(free\s*)?return/i) || [])[0]?.trim() || null,
-    freeShippingThreshold: (text.match(/free\s*(standard\s*)?shipping\s*(on\s*orders?\s*)?(over|above)?\s*\$[\d,]+/i) || [])[0]?.trim() || null,
-    warranty:              (text.match(/(\d+)[- ](year|month)\s*warranty/i) || text.match(/lifetime\s*warranty/i) || [])[0]?.trim() || null,
-    trustpilot:            html.includes('trustpilot.com'),
-    bbb:                   /better business bureau|bbb accredited/i.test(html),
-    reviewCount:           (text.match(/([\d,]+)\s*(verified\s*)?reviews?/i) || [])[1] || null,
-    rating:                (text.match(/(\d+\.?\d*)\s*(?:out of\s*5|\/\s*5|\s*stars?)/i) || [])[1] || null,
-  };
-
-  const codeMatches = html.match(/(?:code|coupon|promo)[:\s]+([A-Z0-9]{4,20})/gi) || [];
-  result.visiblePromoCodes = [...new Set(codeMatches.map(m => m.split(/[:\s]+/).pop()))].slice(0, 5);
-
-  result.specialOffers = {
-    financing:       /financ|pay later|affirm|klarna|afterpay|sezzle/i.test(html),
-    freeShipping:    /free shipping/i.test(html),
-    appDiscount:     /app[^.]{0,30}(discount|off|exclusive)/i.test(html),
-    studentDiscount: /student[^.]{0,30}(discount|off|program)/i.test(html),
-    loyaltyProgram:  /loyalty|reward program|points|member(ship)? reward/i.test(html),
-  };
-
-  return result;
-}
-
-// ─── Print report ─────────────────────────────────────────────────────────────
-
-function printReport(allData, storeName, webUrl) {
-  console.log('\n' + '═'.repeat(60));
-  console.log(`SCRAPE REPORT: ${storeName}`);
-  console.log(`URL: ${webUrl}`);
-  console.log('═'.repeat(60));
-
-  for (const data of allData) {
-    if (!data) continue;
-    console.log(`\n── PAGE: ${data.path} ──`);
-
-    if (data.h1)               console.log(`  H1:              "${data.h1}"`);
-    if (data.metaDescription)  console.log(`  Meta desc:       "${data.metaDescription}"`);
-    if (data.ogDescription)    console.log(`  OG desc:         "${data.ogDescription}"`);
-
-    if (data.taglines?.length) {
-      console.log(`  Taglines (${data.taglines.length}):`);
-      data.taglines.forEach(t => console.log(`    • "${t}"`));
-    }
-
-    if (data.productHeadings?.length) {
-      console.log(`  Product headings (${data.productHeadings.length}):`);
-      data.productHeadings.forEach(h => console.log(`    • ${h}`));
-    }
-
-    if (data.keyParagraphs?.length) {
-      console.log(`  Key paragraphs (${data.keyParagraphs.length}):`);
-      data.keyParagraphs.forEach((p, i) => console.log(`    [${i+1}] ${p.substring(0, 150)}...`));
-    }
-
-    if (data.faqs?.length) {
-      console.log(`  FAQs found (${data.faqs.length}) via ${data.faqs[0]?.source}:`);
-      data.faqs.forEach(f => console.log(`    Q: ${f.q}\n       A: ${f.a?.substring(0, 120)}...`));
-    }
-
-    if (data.salePatterns?.length) {
-      console.log(`  Sale patterns: ${data.salePatterns.join(' | ')}`);
-    }
-
-    if (data.visiblePromoCodes?.length) {
-      console.log(`  Promo codes: ${data.visiblePromoCodes.join(', ')}`);
-    }
-
-    const t = data.trustSignals;
-    const trustFound = Object.entries(t).filter(([,v]) => v && v !== false);
-    if (trustFound.length) {
-      console.log(`  Trust signals:`);
-      trustFound.forEach(([k, v]) => console.log(`    ${k}: ${v}`));
-    }
-
-    const s = data.specialOffers;
-    const specials = Object.entries(s).filter(([,v]) => v);
-    if (specials.length) {
-      console.log(`  Special offers: ${specials.map(([k]) => k).join(', ')}`);
-    }
-  }
-
-  // Summary
-  console.log('\n' + '─'.repeat(60));
-  console.log('SUMMARY:');
-  const allFaqs      = allData.flatMap(d => d?.faqs || []);
-  const allParagraphs = allData.flatMap(d => d?.keyParagraphs || []);
-  const allHeadings  = allData.flatMap(d => d?.productHeadings || []);
-  const allTaglines  = allData.flatMap(d => d?.taglines || []);
-
-  console.log(`  Total FAQs scraped:      ${allFaqs.length}`);
-  console.log(`  Total paragraphs:        ${allParagraphs.length}`);
-  console.log(`  Total product headings:  ${allHeadings.length}`);
-  console.log(`  Total taglines:          ${allTaglines.length}`);
-
-  const score = Math.min(
-    (allFaqs.length >= 2 ? 20 : 0) +
-    (allParagraphs.length >= 3 ? 15 : 0) +
-    (allHeadings.length >= 3 ? 15 : 0) +
-    (allTaglines.length > 0 ? 10 : 0) +
-    (allData[0]?.metaDescription ? 10 : 0) +
-    (allData[0]?.h1 ? 5 : 0), 100
-  );
-  console.log(`  Estimated richness score: ${score}/100`);
-  console.log(`  Estimated tier:           ${score >= 55 ? 'A' : score >= 30 ? 'B' : score >= 10 ? 'C' : 'D'}`);
-  console.log('─'.repeat(60));
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  let webUrl = urlArg;
-  let storeName = webUrl;
+  let webUrl, storeName;
 
-  // If --slug provided, look up from DB
   if (slugArg) {
-    const { data: merchant } = await supabase
-      .from('merchants')
-      .select('name, web_url, scraped_data')
-      .eq('slug', slugArg)
+    const { data: m } = await supabase
+      .from("merchants")
+      .select("name, web_url")
+      .eq("slug", slugArg)
       .single();
-
-    if (!merchant) { console.error(`Merchant not found: ${slugArg}`); process.exit(1); }
-    webUrl    = merchant.web_url;
-    storeName = merchant.name;
-
-    if (merchant.scraped_data) {
-      console.log(`\n📦 Existing scraped_data in DB for ${storeName}:`);
-      console.log(JSON.stringify(merchant.scraped_data, null, 2));
-      console.log('\n--- Now re-scraping live ---\n');
+    if (!m) {
+      console.error(`Not found: ${slugArg}`);
+      process.exit(1);
     }
-  }
-
-  if (!webUrl) {
-    console.error('Usage: node debug_scrape.js https://storeurl.com');
-    console.error('    or node debug_scrape.js --slug=store-slug');
+    webUrl = m.web_url;
+    storeName = m.name;
+  } else if (urlArg) {
+    webUrl = urlArg;
+    storeName = new URL(urlArg).hostname.replace(/^www\./, "");
+  } else {
+    console.error("Usage: node debug_scrape.js https://store.com");
+    console.error("    or node debug_scrape.js --slug=store-slug");
     process.exit(1);
   }
 
-  const base = webUrl.replace(/\/$/, '');
-  console.log(`\n🔍 Scraping: ${base}`);
-  console.log('Checking pages...\n');
+  const base = webUrl.replace(/\/$/, "");
+  console.log(`\n🔍 Debug Scrape: ${storeName}`);
+  console.log(`   URL: ${base}\n`);
 
-  const allData = [];
+  // ── Layer 1: URL Discovery ─────────────────────────────────────────────────
+  section("LAYER 1: URL DISCOVERY");
+  console.log("Scanning homepage nav + footer for links...\n");
+  const discovery = await discoverUrls(base);
+  printDiscovery(discovery, storeName);
 
-  for (const path of SCRAPE_PATHS) {
-    const url  = path === '/' ? base : `${base}${path}`;
-    const html = await fetchPage(url);
-    if (html) {
-      allData.push(extractFromHtml(html, path));
+  // ── Homepage extraction ────────────────────────────────────────────────────
+  section("HOMEPAGE CONTENT");
+  if (discovery.homepageHtml) {
+    const hp = extractHomepage(discovery.homepageHtml);
+    if (hp.h1) console.log(`  H1:           "${hp.h1}"`);
+    if (hp.metaDescription)
+      console.log(`  Meta:         "${hp.metaDescription}"`);
+    if (hp.heroTaglines?.length) {
+      console.log(`  Taglines:`);
+      hp.heroTaglines.forEach((t) => console.log(`    • "${t}"`));
     }
-    await new Promise(r => setTimeout(r, 400));
+    if (hp.productHeadings?.length) {
+      console.log(`  Product headings (${hp.productHeadings.length}):`);
+      hp.productHeadings.forEach((h) => console.log(`    • ${h}`));
+    }
+    if (hp.keyParagraphs?.length) {
+      console.log(`  Key paragraphs (${hp.keyParagraphs.length}):`);
+      hp.keyParagraphs.forEach((p, i) =>
+        console.log(`    [${i + 1}] ${p.substring(0, 150)}...`),
+      );
+    }
+    if (hp.customerReviews?.length) {
+      console.log(
+        `  Customer reviews on homepage (${hp.customerReviews.length}):`,
+      );
+      hp.customerReviews.forEach((r) =>
+        console.log(`    "${r.substring(0, 120)}..."`),
+      );
+    }
+    const t = hp.trustSignals || {};
+    console.log(`  Trust signals:`);
+    Object.entries(t)
+      .filter(([, v]) => v && v !== false)
+      .forEach(([k, v]) => console.log(`    ${k}: ${v}`));
+    const s = hp.specialOffers || {};
+    const specials = Object.entries(s)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    if (specials.length)
+      console.log(`  Special offers: ${specials.join(", ")}`);
+    if (hp.visibleCodes?.length)
+      console.log(`  Visible codes: ${hp.visibleCodes.join(", ")}`);
+    if (hp.salePatterns?.length)
+      console.log(`  Sale patterns: ${hp.salePatterns.join(" | ")}`);
   }
 
-  printReport(allData, storeName, webUrl);
+  // ── Classified pages ───────────────────────────────────────────────────────
+  const toScrape = ["about", "faq", "shipping", "returns", "sale", "blog"];
+  for (const cat of toScrape) {
+    const urls = discovery.classified[cat] || [];
+    if (!urls.length) {
+      console.log(`\n  [${cat.toUpperCase()}] — no URL found in nav`);
+      continue;
+    }
+
+    let content = null;
+    for (const { url } of urls) {
+      section(`${cat.toUpperCase()}: ${url}`);
+      content = await extractContentWithFallback(url, cat);
+      if (content?.renderedWithPlaywright)
+        console.log("  (rendered with Playwright)");
+      if (hasUsefulContent(content)) break;
+      console.log("  → empty, trying next URL...");
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if (!content) {
+      console.log("  No content extracted from any URL");
+      continue;
+    }
+
+    if (cat === "faq") {
+      if (content.faqs?.length) {
+        console.log(`  FAQs found: ${content.faqs.length}`);
+        content.faqs.forEach((f) => {
+          console.log(`\n  Q: ${f.question}`);
+          console.log(`  A: ${f.answer?.substring(0, 200)}...`);
+          console.log(`  (source: ${f.source})`);
+        });
+      } else {
+        console.log("  No FAQs extracted — page may be JS-rendered");
+      }
+    } else if (cat === "about") {
+      if (content.foundingStory)
+        console.log(`  Founding: ${content.foundingStory}`);
+      if (content.mission) console.log(`  Mission:  ${content.mission}`);
+      if (content.stats?.length)
+        console.log(`  Stats:    ${content.stats.join(" | ")}`);
+      if (content.keyParagraphs?.length) {
+        console.log(`  Paragraphs (${content.keyParagraphs.length}):`);
+        content.keyParagraphs.forEach((p, i) =>
+          console.log(`    [${i + 1}] ${p.substring(0, 150)}...`),
+        );
+      }
+    } else if (cat === "shipping") {
+      if (content.freeShippingThreshold)
+        console.log(`  Free shipping: ${content.freeShippingThreshold}`);
+      if (content.deliveryTimes?.length)
+        console.log(`  Delivery: ${content.deliveryTimes.join(", ")}`);
+      console.log(`  International: ${content.internationalShipping}`);
+      console.log(`  Express: ${content.expressAvailable}`);
+    } else if (cat === "returns") {
+      if (content.returnWindow)
+        console.log(`  Return window: ${content.returnWindow}`);
+      console.log(`  Free returns: ${content.freeReturns}`);
+      if (content.conditions?.length)
+        console.log(`  Conditions: ${content.conditions.join(", ")}`);
+    } else if (cat === "sale") {
+      if (content.discountMentions?.length)
+        console.log(`  Discounts: ${content.discountMentions.join(" | ")}`);
+      if (content.saleMentions?.length)
+        console.log(`  Sale types: ${content.saleMentions.join(" | ")}`);
+      if (content.visibleCodes?.length)
+        console.log(`  Codes: ${content.visibleCodes.join(", ")}`);
+    } else if (cat === "blog") {
+      if (content.topics?.length) {
+        console.log(`  Blog topics (${content.topics.length}):`);
+        content.topics.forEach((t) => console.log(`    • ${t}`));
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  // ── Layer 2: Trustpilot ────────────────────────────────────────────────────
+  section("LAYER 2: TRUSTPILOT");
+  console.log(
+    `  Checking trustpilot.com/review/${new URL(base).hostname.replace(/^www\./, "")}...`,
+  );
+  const tp = await scrapeTrustpilot(base);
+  if (tp.found) {
+    console.log(`  ✓ Found`);
+    if (tp.rating) console.log(`  Rating:   ${tp.rating}/5`);
+    if (tp.reviewCount)
+      console.log(`  Reviews:  ${tp.reviewCount.toLocaleString()}`);
+    if (tp.category) console.log(`  Category: ${tp.category}`);
+    console.log(`  Claimed:  ${tp.claimed}`);
+    if (tp.snippets?.length) {
+      console.log(`  Review snippets (${tp.snippets.length}):`);
+      tp.snippets.forEach((s, i) =>
+        console.log(`    [${i + 1}] "${s.substring(0, 150)}..."`),
+      );
+    }
+    if (tp.commonPraise?.length)
+      console.log(`  Common praise:     ${tp.commonPraise.join(", ")}`);
+    if (tp.commonComplaints?.length)
+      console.log(`  Common complaints: ${tp.commonComplaints.join(", ")}`);
+  } else {
+    console.log("  ✗ Not found on Trustpilot");
+  }
+
+  // ── Layer 3: Reddit ────────────────────────────────────────────────────────
+  section("LAYER 3: REDDIT");
+  console.log(`  Searching Reddit for "${storeName}"...`);
+  const rd = await scrapeReddit(storeName, base);
+  if (rd.found) {
+    console.log(`  ✓ Found ${rd.threads.length} relevant threads`);
+    console.log(`  Overall sentiment: ${rd.overallSentiment}`);
+    if (rd.commonQuestions?.length) {
+      console.log(`  Common questions:`);
+      rd.commonQuestions.forEach((q) => console.log(`    • ${q}`));
+    }
+    if (rd.commonComplaints?.length) {
+      console.log(`  Common complaints:`);
+      rd.commonComplaints.forEach((c) => console.log(`    • ${c}`));
+    }
+    console.log(`  Top threads:`);
+    rd.threads
+      .slice(0, 4)
+      .forEach((t) =>
+        console.log(`    [${t.sentiment}] ${t.title} (r/${t.subreddit})`),
+      );
+  } else {
+    console.log("  ✗ No Reddit discussions found");
+  }
+
+  // ── Summary ────────────────────────────────────────────────────────────────
+  section("DATA RICHNESS SUMMARY");
+  const faqCount = discovery.classified.faq?.length ? "✓" : "✗";
+  const aboutCount = discovery.classified.about?.length ? "✓" : "✗";
+  const shipCount = discovery.classified.shipping?.length ? "✓" : "✗";
+  const retCount = discovery.classified.returns?.length ? "✓" : "✗";
+
+  console.log(`  Nav links discovered: ${discovery.all.length}`);
+  console.log(`  About page found:     ${aboutCount}`);
+  console.log(`  FAQ page found:       ${faqCount}`);
+  console.log(`  Shipping page found:  ${shipCount}`);
+  console.log(`  Returns page found:   ${retCount}`);
+  console.log(
+    `  Trustpilot:           ${tp.found ? `✓ ${tp.rating}★ (${tp.reviewCount} reviews)` : "✗"}`,
+  );
+  console.log(
+    `  Reddit:               ${rd.found ? `✓ ${rd.threads.length} threads` : "✗"}`,
+  );
+  console.log("");
 }
 
 main().catch(console.error);

@@ -1,475 +1,426 @@
 /**
- * STEP 2: Store Scraper
+ * STEP 2: Scraper
  *
- * For each merchant with a web_url:
- *   - Scrapes homepage + /about + /shipping + /faq pages
- *   - Extracts meaningful signals (tagline, product names, policies, trust signals)
- *   - Scores scrape richness (0-100)
- *   - Assigns tier (A/B/C/D)
- *   - Saves to merchants.scraped_data
+ * For each store:
+ *   1. Scrape homepage (always, cheerio)
+ *   2. Discover + try subpages (about, faq, shipping, returns) — cheerio first, Playwright fallback
+ *   3. Scrape Trustpilot
+ *   4. Query Reddit
  *
- * Run: node 02_scraper.js [--limit 100] [--tier-only] [--from-id 1000]
+ * Hard 15s limit per subpage — never blocks pipeline
+ * Reads merchants from local CSV — zero DB reads
+ * Saves results to scraped_results.json after EACH store (crash-safe)
+ * Resume-safe — skips already scraped merchants automatically
+ * Bulk upserts to DB only when you're ready via --flush flag
+ *
+ * Run:         node scripts/Dynamic_Store_Content/02_scraper.js --limit=5
+ * Resume:      node scripts/Dynamic_Store_Content/02_scraper.js (auto-skips done stores)
+ * Flush to DB: node scripts/Dynamic_Store_Content/02_scraper.js --flush
  */
-// import 'dotenv/config';
-import { supabase } from "../../dbhelper/dbclient.js";
-import * as cheerio from "cheerio";
+
 import pLimit from "p-limit";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
+import { supabase } from "../../dbhelper/dbclient.js";
+import { discoverUrls } from "./url_discoverer.js";
+import {
+  extractContent,
+  extractHomepage,
+  hasUsefulContent,
+} from "./content_extractor.js";
+import { scrapeTrustpilot } from "./trustpilot_scraper.js";
+import { scrapeReddit } from "./reddit_scraper.js";
+import fs from "fs";
+import path from "path";
+import { parse } from "csv-parse/sync";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: resolve(__dirname, "../../.env") });
+// ─── Paths ────────────────────────────────────────────────────────────────────
+const CSV_PATH = path.resolve(
+  "./scripts/Dynamic_Store_Content/merchants_cache.csv",
+);
+const SCRAPED_PATH = path.resolve(
+  "./scripts/Dynamic_Store_Content/scraped_results.json",
+);
 
-const CONCURRENCY = 3;
-const TIMEOUT_MS = 12000;
-const BATCH_SIZE = 100;
-const DELAY_MS = 800;
-
-const args = process.argv.slice(2);
-function getArg(name) {
-  const eq = args.find((a) => a.startsWith(`--${name}=`));
-  if (eq) return eq.split("=")[1];
-  const idx = args.indexOf(`--${name}`);
-  if (idx !== -1 && args[idx + 1] && !args[idx + 1].startsWith("--"))
-    return args[idx + 1];
-  return null;
-}
-const LIMIT = parseInt(getArg("limit") || "0");
-const FROM_ID = parseInt(getArg("from-id") || "0");
-
-// Pages to scrape per store
-const SCRAPE_PATHS = [
-  "/",
-  "/about",
-  "/about-us",
-  "/our-story",
-  "/who-we-are",
-  "/faq",
-  "/faqs",
-  "/help",
-  "/help-center",
-  "/support",
-  "/shipping",
-  "/shipping-policy",
-  "/delivery",
-  "/returns",
-  "/return-policy",
-  "/refund-policy",
-  "/sale",
-  "/offers",
-  "/promotions",
-  "/deals",
-  "/financing",
-  "/payment-plans",
-  "/collections", // product category listing
-  "/blogs/news",
-  "/pages/about",
-  "/pages/about-us",
-  "/pages/our-story",
-  "/pages/who-we-are",
-  "/pages/faq",
-  "/pages/faqs",
-  "/pages/help",
-  "/pages/help-center",
-  "/pages/support",
-  "/pages/shipping",
-  "/pages/shipping-policy",
-  "/pages/delivery",
-  "/pages/returns",
-  "/pages/return-policy",
-  "/pages/refund-policy",
-  "/pages/sale",
-  "/pages/offers",
-  "/pages/promotions",
-  "/pages/deals",
-  "/pages/financing",
-  "/pages/payment-plans",
-
-];
-
-async function fetchPage(url) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+// ─── Resume support ───────────────────────────────────────────────────────────
+let scrapedResults = [];
+if (fs.existsSync(SCRAPED_PATH)) {
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; SavingHarborBot/1.0; +https://savingharbor.com)",
-        Accept: "text/html",
-      },
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    clearTimeout(timer);
-    return null;
+    const content = fs.readFileSync(SCRAPED_PATH, "utf8").trim();
+    if (content && content !== "[]") {
+      scrapedResults = JSON.parse(content);
+      console.log(`📋 Resuming — ${scrapedResults.length} already scraped`);
+    } else {
+      console.log("📋 scraped_results.json empty, starting fresh");
+    }
+  } catch (err) {
+    console.log(
+      `⚠️  Invalid scraped_results.json, starting fresh: ${err.message}`,
+    );
+    scrapedResults = [];
   }
 }
+const alreadyScraped = new Set(scrapedResults.map((r) => r.id?.toString()));
 
-function extractFaqs($) {
-  const faqs = [];
+function saveProgress() {
+  fs.writeFileSync(SCRAPED_PATH, JSON.stringify(scrapedResults, null, 2));
+}
+// ─── Config ───────────────────────────────────────────────────────────────────
+const CONCURRENCY = 1;
+const PAGE_DELAY = 500;
+const SUBPAGE_TIMEOUT = 15000;
+const UPSERT_CHUNK = 50;
 
-  // Pattern 1: elements with faq/accordion/question class patterns
-  $(
-    '[class*="faq"], [class*="accordion"], [class*="question"], [itemtype*="FAQPage"]',
-  ).each((_, el) => {
-    const q = $(el)
-      .find('[class*="question"], [itemprop="name"], dt, summary, h3, h4')
-      .first()
-      .text()
-      .trim();
-    const a = $(el)
-      .find('[class*="answer"], [itemprop="text"], dd, [class*="content"], p')
-      .first()
-      .text()
-      .trim();
-    if (q.length > 10 && a.length > 20) faqs.push({ q, a });
+const args = process.argv.slice(2);
+const LIMIT = parseInt(
+  args.find((a) => a.startsWith("--limit="))?.split("=")[1] || "0",
+);
+const FROM_ID = parseInt(
+  args.find((a) => a.startsWith("--from-id="))?.split("=")[1] || "0",
+);
+const DRY_RUN = args.includes("--dry-run");
+const FLUSH = args.includes("--flush");
+
+// ─── Helpers for data cleanup ─────────────────────────────────────────────────
+
+// ✅ NEW: filter out boilerplate Trustpilot platform text
+function cleanTrustpilotSnippets(snippets = []) {
+  if (!Array.isArray(snippets)) return [];
+  const banned = [
+    "fake reviews",
+    "platform",
+    "guidelines",
+    "read more",
+    "learn more",
+    "our software",
+  ];
+  return snippets.filter((s) => {
+    if (!s || typeof s !== "string") return false;
+    const lower = s.toLowerCase();
+    return !banned.some((b) => lower.includes(b));
   });
-
-  // Pattern 2: definition lists (dt/dd)
-  $("dl").each((_, dl) => {
-    $(dl)
-      .find("dt")
-      .each((_, dt) => {
-        const q = $(dt).text().trim();
-        const a = $(dt).next("dd").text().trim();
-        if (q.length > 10 && a.length > 20) faqs.push({ q, a });
-      });
-  });
-
-  // Pattern 3: h3/h4 followed by p in help/faq sections
-  $("main h3, main h4, article h3, article h4").each((_, el) => {
-    const q = $(el).text().trim();
-    const a = $(el).next("p").text().trim();
-    if (q.endsWith("?") && a.length > 20) faqs.push({ q, a });
-  });
-
-  // Deduplicate by question text
-  const seen = new Set();
-  return faqs
-    .filter((f) => {
-      if (seen.has(f.q)) return false;
-      seen.add(f.q);
-      return true;
-    })
-    .slice(0, 10);
 }
 
-function extractSalePatterns($, html) {
-  const patterns = [];
-  const text = $("body").text();
+// ✅ NEW: filter obviously off-topic Reddit threads
+function cleanRedditData(reddit = {}, storeName = "") {
+  if (!reddit || typeof reddit !== "object")
+    return {
+      found: false,
+      threads: [],
+      commonQuestions: [],
+      commonComplaints: [],
+      overallSentiment: "neutral",
+    };
 
-  // Seasonal sale mentions
-  const seasonal =
-    text.match(
-      /(black friday|cyber monday|summer sale|winter sale|spring sale|holiday sale|anniversary sale|flash sale|clearance)[^.]{0,80}/gi,
-    ) || [];
-  patterns.push(...seasonal.slice(0, 3).map((s) => s.trim()));
+  const brand = (storeName || "").toLowerCase();
+  const usefulKeywords = [
+    "coupon",
+    "code",
+    "discount",
+    "promo",
+    "review",
+    "experience",
+    "shipping",
+    "quality",
+    "refund",
+    "scam",
+    "legit",
+  ];
 
-  // Discount patterns
-  const discounts = text.match(/\d+%\s*off[^.]{0,60}/gi) || [];
-  patterns.push(...discounts.slice(0, 3).map((s) => s.trim()));
+  const filteredThreads = (reddit.threads || []).filter((t) => {
+    if (!t || typeof t !== "object") return false;
+    const title = (t.title || "").toLowerCase();
+    const snip = (t.snippet || "").toLowerCase();
+    const sub = (t.subreddit || "").toLowerCase();
 
-  return [...new Set(patterns)].slice(0, 5);
-}
+    // hard skip obvious off-topic subs if brand is generic
+    const offTopicSubs = [
+      "destinythegame",
+      "superstonk",
+      "politics",
+      "gaming",
+      "pcgaming",
+      "costaricatravel",
+    ];
+    if (offTopicSubs.includes(sub)) return false;
 
-function extractFromHtml(html, path) {
-  const $ = cheerio.load(html);
-  $(
-    'script, style, nav, footer, noscript, iframe, [aria-hidden="true"]',
-  ).remove();
+    const inText = title.includes(brand) || snip.includes(brand);
+    const hasKeyword = usefulKeywords.some(
+      (k) => title.includes(k) || snip.includes(k),
+    );
+    // require brand mention OR at least a coupon/review keyword
+    return inText || hasKeyword;
+  });
 
-  const data = {
-    path,
-    metaDescription: $('meta[name="description"]').attr("content") || null,
-    ogDescription: $('meta[property="og:description"]').attr("content") || null,
-    h1: $("h1").first().text().trim() || null,
-    taglines: [],
-    productHeadings: [],
-    keyParagraphs: [],
-    faqs: [],
-    salePatterns: [],
-    trustSignals: {},
-    visiblePromoCodes: [],
-    hasFinancing: false,
-    hasFreeShipping: false,
-    appDiscount: null,
-    studentDiscount: null,
-    loyaltyProgram: null,
+  const questions = Array.isArray(reddit.commonQuestions)
+    ? reddit.commonQuestions
+    : [];
+  const complaints = Array.isArray(reddit.commonComplaints)
+    ? reddit.commonComplaints
+    : [];
+
+  return {
+    found: filteredThreads.length > 0 || reddit.found || false,
+    threads: filteredThreads.slice(0, 6),
+    commonQuestions: questions,
+    commonComplaints: complaints,
+    overallSentiment: reddit.overallSentiment || "neutral",
   };
-
-  // Taglines / hero statements
-  $(
-    'h2, .hero p, [class*="tagline"], [class*="subtitle"], [class*="hero"] p, [class*="banner"] p',
-  ).each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 15 && t.length < 250) data.taglines.push(t);
-  });
-  data.taglines = data.taglines.slice(0, 3);
-
-  // Product/category headings
-  $(
-    'main h2, main h3, article h2, article h3, .content h2, .content h3, [class*="category"] h2, [class*="product"] h2',
-  ).each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 3 && t.length < 80) data.productHeadings.push(t);
-  });
-  data.productHeadings = [...new Set(data.productHeadings)].slice(0, 12);
-
-  // Key paragraphs
-  $(
-    'main p, article p, .about p, [class*="description"] p, [class*="content"] p',
-  ).each((_, el) => {
-    const t = $(el).text().trim();
-    if (t.length > 60 && t.length < 800) data.keyParagraphs.push(t);
-  });
-  data.keyParagraphs = data.keyParagraphs.slice(0, 6);
-
-  // FAQs (best extracted from faq/help pages)
-  data.faqs = extractFaqs($);
-
-  // Sale patterns
-  data.salePatterns = extractSalePatterns($, html);
-
-  // Trust signals
-  const text = $("body").text();
-  data.trustSignals = {
-    yearsInBusiness:
-      (text.match(/(since|founded|est\.?)\s*(\d{4})/i) ||
-        text.match(/(\d+)\s*years?\s*(of\s*)?(experience|in business)/i) ||
-        [])[0]?.trim() || null,
-    returnWindow:
-      (text.match(/(\d+)[- ]day\s*(free\s*)?return/i) ||
-        text.match(/returns?\s*within\s*(\d+)\s*days?/i) ||
-        [])[0]?.trim() || null,
-    freeShippingThreshold:
-      (text.match(
-        /free\s*(standard\s*)?shipping\s*(on\s*orders?\s*)?(over|above)?\s*\$[\d,]+/i,
-      ) || [])[0]?.trim() || null,
-    warranty:
-      (text.match(/(\d+)[- ](year|month)\s*warranty/i) ||
-        text.match(/lifetime\s*warranty/i) ||
-        [])[0]?.trim() || null,
-    trustpilot: html.includes("trustpilot.com"),
-    bbb: /better business bureau|bbb accredited/i.test(html),
-    reviewCount:
-      (text.match(/([\d,]+)\s*(verified\s*)?reviews?/i) || [])[1]?.replace(
-        ",",
-        "",
-      ) || null,
-    rating:
-      (text.match(/(\d+\.?\d*)\s*(?:out of\s*5|\/\s*5|\s*stars?)/i) || [])[1] ||
-      null,
-  };
-
-  // Special saving opportunities
-  data.hasFinancing =
-    /financ|pay later|installment|affirm|klarna|afterpay|sezzle/i.test(html);
-  data.hasFreeShipping = /free shipping/i.test(html);
-  data.appDiscount = /app[^.]{0,30}(discount|off|exclusive|deal)/i.test(html)
-    ? "App discount mentioned"
-    : null;
-  data.studentDiscount = /student[^.]{0,30}(discount|off|program|deal)/i.test(
-    html,
-  )
-    ? "Student discount mentioned"
-    : null;
-  data.loyaltyProgram =
-    /loyalty|reward program|points|member(ship)? reward/i.test(html)
-      ? "Loyalty/rewards program mentioned"
-      : null;
-
-  // Visible promo codes
-  const codeMatches =
-    html.match(/(?:code|coupon|promo)[:\s]+([A-Z0-9]{4,20})/gi) || [];
-  data.visiblePromoCodes = [
-    ...new Set(codeMatches.map((m) => m.split(/[:\s]+/).pop())),
-  ].slice(0, 5);
-
-  return data;
 }
 
-function scoreRichness(scraped) {
-  let score = 0;
-  if (scraped.h1) score += 5;
-  if (scraped.metaDescription?.length > 50) score += 8;
-  if (scraped.taglines?.length > 0) score += 8;
-  if (scraped.productHeadings?.length >= 3) score += 12;
-  if (scraped.keyParagraphs?.length >= 2) score += 12;
-  if (scraped.faqs?.length >= 2) score += 15; // bonus for real FAQs
-  if (scraped.salePatterns?.length > 0) score += 5;
-  const t = scraped.trustSignals || {};
-  if (t.yearsInBusiness) score += 8;
-  if (t.warranty) score += 5;
-  if (t.returnWindow) score += 5;
-  if (t.freeShippingThreshold) score += 5;
-  if (t.trustpilot) score += 4;
-  if (t.bbb) score += 3;
-  if (t.reviewCount) score += 4;
-  if (scraped.visiblePromoCodes?.length > 0) score += 5;
-  if (scraped.hasFinancing) score += 3;
-  if (scraped.appDiscount) score += 2;
-  if (scraped.studentDiscount) score += 2;
-  if (scraped.loyaltyProgram) score += 2;
-  return Math.min(score, 100);
+// ─── Scoring ──────────────────────────────────────────────────────────────────
+function scoreRichness(data) {
+  let s = 0;
+  const w = data.website || {};
+  const tp = data.trustpilot || {};
+  const rd = data.reddit || {};
+
+  if (w.homepage?.h1) s += 4;
+  if (w.homepage?.metaDescription?.length > 50) s += 6;
+  if (w.homepage?.heroTaglines?.length) s += 5;
+  if (w.homepage?.productHeadings?.length >= 3) s += 8;
+  if (w.homepage?.keyParagraphs?.length >= 2) s += 8;
+  if (w.homepage?.customerReviews?.length) s += 5;
+  if (w.homepage?.trustSignals?.returnWindow) s += 4;
+  if (w.homepage?.trustSignals?.freeShippingThreshold) s += 4;
+  if (w.homepage?.trustSignals?.warranty) s += 3;
+  if (w.homepage?.trustSignals?.reviewCount) s += 3;
+  if (w.homepage?.specialOffers?.financing) s += 2;
+  if (w.homepage?.specialOffers?.loyaltyProgram) s += 2;
+  if (w.homepage?.salePatterns?.length) s += 3;
+  if (w.about?.keyParagraphs?.length) s += 8;
+  if (w.about?.foundingStory) s += 4;
+  if (w.about?.stats?.length) s += 3;
+  if (w.faq?.faqs?.length >= 2) s += 10;
+  if (w.shipping?.freeShippingThreshold) s += 4;
+  if (w.returns?.returnWindow) s += 4;
+  if (tp.found) s += 8;
+  if (tp.rating) s += 3;
+  if (tp.snippets?.length >= 2) s += 5;
+  if (rd.found) s += 5;
+  if (rd.commonQuestions?.length) s += 3;
+
+  return Math.min(s, 100);
 }
 
 function assignTier(score, hasCoupons, hasWebUrl) {
   if (!hasWebUrl) return "D";
-  if (!hasCoupons && score < 20) return "D";
   if (score >= 55 && hasCoupons) return "A";
   if (score >= 30) return "B";
   if (score >= 10) return "C";
   return "D";
 }
 
+// ─── Safe subpage fetch with hard timeout ────────────────────────────────────
+async function tryFetchSubpage(url, category) {
+  return Promise.race([
+    extractContent(url, category),
+    new Promise((resolve) => setTimeout(() => resolve(null), SUBPAGE_TIMEOUT)),
+  ]);
+}
+
+// ─── Scrape one merchant ──────────────────────────────────────────────────────
 async function scrapeMerchant(merchant) {
   const base = merchant.web_url?.replace(/\/$/, "");
   if (!base) return { score: 0, tier: "D", data: null };
 
-  const combined = {};
-  const allFaqs = [];
+  // ✅ NEW: ensure consistent base structure
+  const scraped = {
+    website: {
+      homepage: null,
+      about: null,
+      faq: null,
+      shipping: null,
+      returns: null,
+    },
+    trustpilot: {},
+    reddit: {},
+  };
 
-  for (const path of SCRAPE_PATHS) {
-    const url = path === "/" ? base : `${base}${path}`;
-    const html = await fetchPage(url);
-    if (!html) continue;
-
-    const extracted = extractFromHtml(html, path);
-
-    if (path === "/") {
-      Object.assign(combined, extracted);
-    } else {
-      // Merge non-homepage data additively
-      for (const [k, v] of Object.entries(extracted)) {
-        if (k === "faqs" && v?.length) {
-          allFaqs.push(...v);
-        } else if (k === "trustSignals" && combined.trustSignals) {
-          for (const [tk, tv] of Object.entries(v)) {
-            if (!combined.trustSignals[tk] && tv)
-              combined.trustSignals[tk] = tv;
-          }
-        } else if (k === "salePatterns" && v?.length) {
-          combined.salePatterns = [
-            ...new Set([...(combined.salePatterns || []), ...v]),
-          ].slice(0, 6);
-        } else if (k === "keyParagraphs" && v?.length) {
-          combined.keyParagraphs = [
-            ...(combined.keyParagraphs || []),
-            ...v,
-          ].slice(0, 8);
-        } else if (!combined[k] && v) {
-          combined[k] = v;
-        }
-      }
-    }
-
-    await new Promise((r) => setTimeout(r, DELAY_MS));
+  const discovery = await discoverUrls(base);
+  if (discovery.homepageHtml) {
+    scraped.website.homepage = extractHomepage(discovery.homepageHtml);
   }
 
-  // Merge all FAQs found across pages, deduplicated
-  if (allFaqs.length) {
-    const seen = new Set((combined.faqs || []).map((f) => f.q));
-    for (const f of allFaqs) {
-      if (!seen.has(f.q)) {
-        combined.faqs = combined.faqs || [];
-        combined.faqs.push(f);
-        seen.add(f.q);
+  const toScrape = ["about", "faq", "shipping", "returns"];
+  for (const category of toScrape) {
+    const urls = discovery.classified[category] || [];
+    if (!urls.length) continue;
+    for (const { url } of urls) {
+      const content = await tryFetchSubpage(url, category);
+      if (hasUsefulContent(content)) {
+        scraped.website[category] = content;
+        if (content.usedPlaywright) console.log(`      ↳ Playwright: ${url}`);
+        break;
       }
+      await new Promise((r) => setTimeout(r, PAGE_DELAY));
     }
   }
-  if (combined.faqs) combined.faqs = combined.faqs.slice(0, 10);
 
-  const score = scoreRichness(combined);
+  let tp = await scrapeTrustpilot(base);
+  tp = {
+    ...(tp || {}),
+    snippets: cleanTrustpilotSnippets(tp?.snippets),
+  };
+
+  await new Promise((r) => setTimeout(r, 500));
+
+  let rd = await scrapeReddit(merchant.name, base);
+  rd = cleanRedditData(rd, merchant.name);
+
+  scraped.trustpilot = tp;
+  scraped.reddit = rd;
+
+  const score = scoreRichness(scraped);
   const tier = assignTier(
     score,
-    (merchant.active_coupons_count || 0) > 0,
+    (parseInt(merchant.active_coupons_count) || 0) > 0,
     !!base,
   );
 
-  return { score, tier, data: combined };
+  return { score, tier, data: scraped };
+}
+
+// ─── Flush scraped_results.json → Supabase ───────────────────────────────────
+async function flushToDb() {
+  if (!fs.existsSync(SCRAPED_PATH)) {
+    console.log("❌ No scraped_results.json found. Run scraper first.");
+    return;
+  }
+  const results = JSON.parse(fs.readFileSync(SCRAPED_PATH));
+  const updates = results
+    .filter((r) => !r.error)
+    .map((r) => ({
+      id: parseInt(r.id),
+      content_status: r.tier === "D" ? "noindex" : "scraped",
+      content_tier: r.tier,
+      scrape_score: r.score,
+      scraped_data: r.scraped_data,
+      scrape_attempted_at: r.scraped_at,
+    }));
+
+  console.log(`💾 Flushing ${updates.length} results to DB...`);
+  for (let i = 0; i < updates.length; i += UPSERT_CHUNK) {
+    const chunk = updates.slice(i, i + UPSERT_CHUNK);
+    const { error } = await supabase.from("merchants").upsert(chunk);
+    if (error) console.error(`  ✗ Upsert error:`, error.message);
+    else
+      console.log(
+        `  ✓ ${Math.min(i + UPSERT_CHUNK, updates.length)}/${updates.length}`,
+      );
+  }
+  console.log("🏁 Flush complete.");
 }
 
 async function main() {
-  console.log("🔍 Scraper starting...");
+  if (FLUSH) return flushToDb();
+
+  console.log(
+    `🔍 Scraper | Concurrency: ${CONCURRENCY} | Limit: ${LIMIT || "all"} | DryRun: ${DRY_RUN}\n`,
+  );
+
   const limiter = pLimit(CONCURRENCY);
-  let offset = 0,
-    totalProcessed = 0;
 
-  while (true) {
-    let q = supabase
-      .from("merchants")
-      .select("id, name, slug, web_url, active_coupons_count")
-      .eq("is_publish", true)
-      .in("content_status", ["template", "failed"])
-      .order("views", { ascending: false })
-      .range(offset, offset + BATCH_SIZE - 1);
+  // ─── SINGLE CSV LOADING ─────────────────────────────────────────────────────
+  console.log("📁 Looking for CSV at:", CSV_PATH);
 
-    if (FROM_ID) q = q.gte("id", FROM_ID);
-
-    const { data: merchants, error } = await q;
-    if (error) {
-      console.error("DB error:", error);
-      break;
-    }
-    if (!merchants?.length) {
-      console.log("✅ Done.");
-      break;
-    }
-
-    const remaining = LIMIT ? LIMIT - totalProcessed : merchants.length;
-    const batch = merchants.slice(0, remaining);
-    console.log(`\n📦 Batch: ${batch.length} stores`);
-
-    await Promise.all(
-      batch.map((m) =>
-        limiter(async () => {
-          console.log(`  ↳ ${m.name} (${m.web_url || "no url"})`);
-          await supabase
-            .from("merchants")
-            .update({
-              content_status: "scraping",
-              scrape_attempted_at: new Date().toISOString(),
-            })
-            .eq("id", m.id);
-          try {
-            const { score, tier, data } = await scrapeMerchant(m);
-            await supabase
-              .from("merchants")
-              .update({
-                content_status: tier === "D" ? "noindex" : "scraped",
-                content_tier: tier,
-                scrape_score: score,
-                scraped_data: data,
-              })
-              .eq("id", m.id);
-            console.log(
-              `    ✓ Tier ${tier} | score ${score} | faqs: ${data?.faqs?.length || 0}`,
-            );
-          } catch (err) {
-            console.error(`    ✗ ${err.message}`);
-            await supabase
-              .from("merchants")
-              .update({
-                content_status: "failed",
-                generation_error: err.message,
-              })
-              .eq("id", m.id);
-          }
-        }),
-      ),
-    );
-
-    totalProcessed += batch.length;
-    if (LIMIT && totalProcessed >= LIMIT) break;
-    if (merchants.length < BATCH_SIZE) break;
-    offset += BATCH_SIZE;
+  if (!fs.existsSync(CSV_PATH)) {
+    console.error(`❌ CSV not found: ${CSV_PATH}`);
+    process.exit(1);
   }
 
-  console.log(`\n🏁 Done. Processed ${totalProcessed} stores.`);
+  const raw = parse(fs.readFileSync(CSV_PATH, "utf8"), {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+  });
+
+  console.log("🔍 RAW CSV rows:", raw.length);
+
+  const ALL_MERCHANTS = raw.filter((m) => {
+    const isPublish = (m.is_publish || "").toString().trim().toLowerCase();
+    const status = (m.content_status || "").toString().trim().toLowerCase();
+    return (
+      isPublish === "true" && ["template", "failed", "noindex"].includes(status)
+    );
+  });
+
+  console.log(`📋 Filtered merchants: ${ALL_MERCHANTS.length}`);
+
+  // ─── Filter merchants to scrape ──────────────────────────────────────────────
+  let merchants = ALL_MERCHANTS.filter(
+    (m) => !alreadyScraped.has(m.id?.toString()),
+  );
+  if (FROM_ID) merchants = merchants.filter((m) => parseInt(m.id) >= FROM_ID);
+  if (LIMIT) merchants = merchants.slice(0, LIMIT);
+
+  console.log(
+    `📦 To scrape: ${merchants.length} stores (${alreadyScraped.size} already done)\n`,
+  );
+
+  if (!merchants.length) {
+    console.log(
+      "✅ Nothing to scrape. Use --force or delete scraped_results.json",
+    );
+    return;
+  }
+
+  // ─── Scrape loop ─────────────────────────────────────────────────────────────
+  await Promise.all(
+    merchants.map((m) =>
+      limiter(async () => {
+        console.log(`  ↳ ${m.name} (${m.web_url})`);
+
+        try {
+          const { score, tier, data } = await scrapeMerchant(m);
+
+          const tpStr = data?.trustpilot?.found
+            ? `⭐${data.trustpilot.rating}(${data.trustpilot.reviewCount})`
+            : "no-tp";
+          const rdStr = data?.reddit?.found
+            ? `💬${data.reddit.threads.length}`
+            : "no-reddit";
+          const faqStr = data?.website?.faq?.faqs?.length
+            ? `FAQs:${data.website.faq.faqs.length}`
+            : "no-faq";
+          console.log(
+            `    ✓ Tier:${tier} Score:${score} | ${faqStr} | ${tpStr} | ${rdStr}`,
+          );
+
+          if (!DRY_RUN) {
+            scrapedResults.push({
+              id: m.id,
+              name: m.name,
+              slug: m.slug,
+              web_url: m.web_url,
+              active_coupons_count: m.active_coupons_count,
+              category_names: m.category_names,
+              tier,
+              score,
+              scraped_data: data,
+              scraped_at: new Date().toISOString(),
+            });
+            saveProgress();
+          }
+        } catch (err) {
+          console.error(`    ✗ ${err.message}`);
+          if (!DRY_RUN) {
+            scrapedResults.push({
+              id: m.id,
+              name: m.name,
+              tier: "D",
+              score: 0,
+              error: err.message.substring(0, 500),
+              scraped_at: new Date().toISOString(),
+            });
+            saveProgress();
+          }
+        }
+      }),
+    ),
+  );
+
+  console.log(`\n🏁 Done. Scraped: ${merchants.length} stores.`);
+  console.log(`💾 Results saved to: ${SCRAPED_PATH}`);
+  console.log(`💡 When ready to push to DB: node 02_scraper.js --flush`);
 }
 
 main().catch(console.error);

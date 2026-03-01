@@ -1,0 +1,855 @@
+[
+  {
+    "id": "123",
+    "name": "1 Badd Ride",
+    "slug": "1-badd-ride-coupons",
+    "web_url": "https://www.walmart.com/search/?query=1%20Badd%20Ride&irgwc=1&sourceid=imp_TI0z9%3A2g2xyLTHDwUx0Mo3QWUkEXbLQoZQaP180&veh=aff&wmlspartner=imp_2480094&clickid=TI0z9%3A2g2xyLTHDwUx0Mo3QWUkEXbLQoZQaP180&sharedid=&affiliates_ad_id=565706&campaign_id=9383",
+    "active_coupons_count": "30",
+    "category_names": "[\"Automotive\"]",
+    "tier": "C",
+    "score": 20,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": "Robot or human?",
+          "metaDescription": null,
+          "ogDescription": null,
+          "heroTaglines": [],
+          "productHeadings": [],
+          "keyParagraphs": [],
+          "customerReviews": [],
+          "trustSignals": {
+            "yearsInBusiness": null,
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": null,
+            "trustpilot": false,
+            "bbb": false,
+            "secureCheckout": false
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": false,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": false,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": null,
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": 1.7,
+        "reviewCount": 11957,
+        "snippets": [
+          "I love Walmart and have for years now!! There is a ton more options online then stocked at a Walmart location!! Some of our packages never were received at the delivery address provided but Walmart always makes it right!!! Got a new iPhone this week and the screen protector came broke- everything else was perfect tho- the phone - charging dock and speaker",
+          "Product was damaged upon arrival.I can only return via store and I am homebound so cannot do this.I ordered ice cube Orchid and it had NO buds, and 7 flowers and 3 of the blooms were already damaged and dying",
+          "Please don't go to Walmart at St Johns Lake or the other Walmart in Clermont.  Employees there treat customers horribly and their management sucks because they back them up.  I prefer to pay few more cents in Target or Publix than going to this trashy store where customers are treated with total disregard. Respect yourself.",
+          "I recently shopped at Walmart and overall it was a good experience. I found most of the items I needed at competitive prices, and the store was clean and well organized. Checkout was fairly quick and smooth.I’m giving 4 stars because a few products were out of stock, so I had to choose alternatives. Still, the staff was friendly and helpful when I had questions.I would definitely shop here again.",
+          "Very disingenuous. Anyone who can add 2+2 can see shipping isn't free’ as Walmart claims.When a price for a product is higher because shipping is chosen, then you are paying for shipping.And when an item in my cart experiences a ‘price change’ when I change the shipping address, then you are paying for shipping.",
+          "Overall Walmart is my one stop shopping favorite. I usually find the best prices and can usually find everything on my list in one place. I particularly love the free pick up and delivery for times when I can’t go shopping it makes it easy to get what I need even in times of chaos emergencies or just when your in a pinch for time. I love Walmart whether it’s a local superstore or online."
+        ],
+        "commonPraise": [
+          "best"
+        ],
+        "commonComplaints": [
+          "damaged",
+          "never"
+        ],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:14:52.791Z"
+  },
+  {
+    "id": "124",
+    "name": "1 Exam Prep",
+    "slug": "1-exam-prep-coupons",
+    "web_url": "https://1examprep.com",
+    "active_coupons_count": "8",
+    "category_names": "[\"Education\"]",
+    "tier": "A",
+    "score": 60,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": ":(",
+          "metaDescription": "Florida's leading contractor and exam prep school, 1 Exam Prep, boasts over 70,000 graduates and a 97% pass rate. Offering experts 1-on-1 tutoring and assistance with permits and applications, we excel in preparing candidates for County & State Construction Licensing Exams with vast resources and personalized support.",
+          "ogDescription": "Florida's leading contractor and exam prep school, 1 Exam Prep, boasts over 70,000 graduates and a 97% pass rate. Offering experts 1-on-1 tutoring and assistance with permits and applications, we excel in preparing candidates for County & State Construction Licensing Exams with vast resources and personalized support.",
+          "heroTaglines": [],
+          "productHeadings": [
+            "Best Sellers Driving Trades Forward",
+            "Best Selling Products",
+            "Florida Financial Responsibility and Stability Online Course - 14 Hours",
+            "Broward County - 4 Hour Online Continuing Education",
+            "Florida Business and Finance Exam Complete Book Set",
+            "2 Hours Private Tutoring",
+            "All The Tools Under One Roof",
+            "Ultimate Packages",
+            "Application Services",
+            "Online Courses"
+          ],
+          "keyParagraphs": [
+            "Choose your state and begin your Contractor's license exam preparation",
+            "Turn ambition into achievement: Access Books, Courses, Applications, and Ultimate Packages that propel you forward!",
+            "1 Exam Prep provides access to online contractor course content, exam prep, books, and practice test questions.",
+            "1 Exam Prep is a leading provider of contracting courses & resources to pass the state contracting exam.",
+            "We are a leading provider of contracting courses & resources to pass the state contracting exam",
+            "Our book rental packages include FREE SHIPPING because 1 Exam Prep always understands your needs!"
+          ],
+          "customerReviews": [],
+          "trustSignals": {
+            "yearsInBusiness": null,
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": null,
+            "trustpilot": false,
+            "bbb": false,
+            "secureCheckout": true
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": true,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": false,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": {
+          "category": "about",
+          "keyParagraphs": [
+            "All of our courses and exam prep material is available 24 hours a day! Access the information whenever and as often as you need.",
+            "We provide the TOOLS for YOU to be SUCCESSFUL on YOUR schedule, not ours! ALL of the Information you need is available at ONE LOW PRICE! Here's the revised About Us page incorporating your nationwide presence and impact",
+            "At 1 exam prep, we are more than just a test prep company—we are your partner in launching and growing a successful contracting business. Our mission is to simplify the licensing process, providing aspiring contractors with everything they need to pass their exams and build thriving careers in the construction industry.",
+            "Founded with the goal of making contractor licensing more accessible, 1 exam prep has grown into a trusted resource for thousands of students nationwide. Since our inception, we have helped over 100,000 aspiring and current contractors navigate the licensing process and grow their businesses. Today, we proudly serve all 50 states, offering industry-leading exam prep and business solutions to contractors across the country.",
+            "Our online courses, study materials, and practice exams make passing your contractor exam easier than ever. Whether you're preparing for a Roofing, General Contracting, Electrical, or Plumbing License, we have the tools to help you succeed.",
+            "Getting licensed is just the beginning. We assist new contractors with business registration, insurance, bonding, and all the necessary steps to legally operate in the construction industry."
+          ],
+          "headings": [
+            "Shopping cart",
+            "Your cart is empty.",
+            "Discount applied",
+            "Subtotal",
+            "About 1 Exam Prep",
+            "Our Story",
+            "What We Offer",
+            "Exam Preparation"
+          ],
+          "foundingStory": null,
+          "mission": "Our mission is to simplify the licensing process, providing aspiring contractors with everything they need to pass their exams and build thriving careers in the construction industry.",
+          "stats": []
+        },
+        "faq": {
+          "category": "faq",
+          "faqs": [
+            {
+              "question": "Get Your License",
+              "answer": "Alabama\n                                  \n                                    Alaska\n                                  \n                                    Arizona\n                                  \n                                    Arkansas\n                                  \n                                    California\n                                  \n                                    Colorado\n                                  \n                                    Connecticut\n          ",
+              "source": "details"
+            },
+            {
+              "question": "Continuing Education",
+              "answer": "14 Hour Online Continuing Education - Florida State CILB\n                                  \n                                    4 HR Continuing Education - Broward County\n                                  \n                                    16 Hour Online Continuing Education - Miami Dade\n                                  \n                                    14 Hour Continuing Education - Online Palm Beach\n                                  \n                                    Florida Financial ",
+              "source": "details"
+            },
+            {
+              "question": "Application Services",
+              "answer": "Application Services\n                                  \n                                    Business Setup",
+              "source": "details"
+            },
+            {
+              "question": "More\n                        \n                          \n                        \n                      \n                                      Resources",
+              "answer": "About 1 Exam Prep\n                                  \n                                    Our Staff\n                                  \n                                    Career Opportunities\n                                  \n                                    Contact Us\n                                  \n                                    Testimonials\n                                  \n                                    Videos\n                                  \n                              ",
+              "source": "details"
+            },
+            {
+              "question": "Resources",
+              "answer": "Rentals (Free Shipping)\n                                            \n                                          \n                                            \n                                              NASCLA Preview\n                                            \n                                          \n                                            \n                                              Business & Finance Preview\n                                            \n                               ",
+              "source": "details"
+            }
+          ]
+        },
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": 3.7,
+        "reviewCount": 1,
+        "snippets": [
+          "Anyone can write a Trustpilot review. People who write reviews have ownership to edit or delete them at any time, and they’ll be displayed as long as an account is active.",
+          "Learn about Trustpilot’s review process."
+        ],
+        "commonPraise": [],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:15:08.172Z"
+  },
+  {
+    "id": "125",
+    "name": "1 Hair Stop",
+    "slug": "1-hair-stop-coupons",
+    "web_url": "https://1hairstop.com",
+    "active_coupons_count": "21",
+    "category_names": "[\"Beauty\"]",
+    "tier": "C",
+    "score": 12,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": "Restricted access",
+          "metaDescription": null,
+          "ogDescription": null,
+          "heroTaglines": [],
+          "productHeadings": [],
+          "keyParagraphs": [
+            "If you’d like to place an order, please get in touch with us on sales@1hairstop.com"
+          ],
+          "customerReviews": [],
+          "trustSignals": {
+            "yearsInBusiness": null,
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": null,
+            "trustpilot": false,
+            "bbb": false,
+            "secureCheckout": true
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": false,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": false,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": null,
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": null,
+        "reviewCount": 0,
+        "snippets": [],
+        "commonPraise": [],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:15:20.138Z"
+  },
+  {
+    "id": "126",
+    "name": "1 Lead Agency",
+    "slug": "1-lead-agency-coupons",
+    "web_url": "https://www.1leadagency.com/",
+    "active_coupons_count": "8",
+    "category_names": "[\"Services\"]",
+    "tier": "D",
+    "score": 8,
+    "scraped_data": {
+      "website": {
+        "homepage": null,
+        "about": null,
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": null,
+        "reviewCount": 0,
+        "snippets": [],
+        "commonPraise": [],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:15:40.765Z"
+  },
+  {
+    "id": "127",
+    "name": "1000Pip Climber System",
+    "slug": "1000pip-climber-system-coupons",
+    "web_url": "https://www.1000pipclimbersystem.com/?hop=0",
+    "active_coupons_count": "27",
+    "category_names": "[\"Financial Services\"]",
+    "tier": "C",
+    "score": 16,
+    "scraped_data": {
+      "website": {
+        "homepage": null,
+        "about": null,
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": 4.8,
+        "reviewCount": 193,
+        "snippets": [
+          "1000pip climber I hate to say works flawless. Plus the customer service is A+. I had a hard time setting it up possibly because I was using an older Mac Air so I set it up on Windows and by god there system defiantly works as Advertised. You must be patient though the signals don’t always get triggered by the expiration but the ones that do in my case 90% hit the take profit 2.",
+          "I’ve tried plenty of Forex systems before, but this one stands out. It’s not overly complicated, and the trade signals are accurate. I’ve had a few solid wins, and the email notifications make it convenient. Highly recommend giving it a go!",
+          "This system completely surprised me! The setup took less than ten minutes, and the alerts have been spot-on every time. All trade details like entry, take profit, and stop loss are right there for you to follow. No complicated settings, no frills, just solid, consistent signals that lead to real wins. I’ve had steady growth since starting, which I really wasn’t expecting. Would recommend it to anyone serious about Forex!",
+          "I’ve been trading with 1000pip Climber for a few weeks, and the signals are spot-on. I made a quick profit after investing in a EUR/USD trade. Setup was simple, and customer support has been fantastic. I’m really happy with the results so far.",
+          "I found the 1000pip Climber is an excellent trading algoruthm that has finally helped ne achive consistent profits. The software is easy to set up and follow, and the trade parameters provided are spot on",
+          "Hi Jim and Pipclimber1000 team, just wanted to tell you that I passed phase 1 of my 100k challenge. The EA made 8k$ in 14 trading days…… amazing just amazing, I can 100% recommend this EA, and the support is amazing……..thx Mark Walters"
+        ],
+        "commonPraise": [
+          "excellent",
+          "amazing",
+          "recommend",
+          "happy",
+          "fantastic"
+        ],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:15:48.984Z"
+  },
+  {
+    "id": "128",
+    "name": "108 Health",
+    "slug": "108-health-coupons",
+    "web_url": "https://108.health",
+    "active_coupons_count": "22",
+    "category_names": "[\"Health & Wellness\"]",
+    "tier": "D",
+    "score": 8,
+    "scraped_data": {
+      "website": {
+        "homepage": null,
+        "about": null,
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": null,
+        "reviewCount": 0,
+        "snippets": [],
+        "commonPraise": [],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:15:59.846Z"
+  },
+  {
+    "id": "129",
+    "name": "10adventures",
+    "slug": "10adventures-coupons",
+    "web_url": "https://www.10adventures.com",
+    "active_coupons_count": "8",
+    "category_names": "[\"Tours & Travels\"]",
+    "tier": "B",
+    "score": 45,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": "Personalized hiking, cycling, and adventure tours.",
+          "metaDescription": "Find the hiking trails to the most stunning places on earth. Plan a trip using our free online route guides or book one of our handpicked adventure tours.",
+          "ogDescription": "Find the hiking trails to the most stunning places on earth. Plan a trip using our free online route guides or book one of our handpicked adventure tours.",
+          "heroTaglines": [],
+          "productHeadings": [],
+          "keyParagraphs": [
+            "Discover the better way to travel. Authentic hiking, cycling, and adventure tours tailored just for you. Hassle-free and backed by world-class support.",
+            "Choose from over 1,000 locally operated tours and customize them to create your dream adventure."
+          ],
+          "customerReviews": [],
+          "trustSignals": {
+            "yearsInBusiness": null,
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": null,
+            "trustpilot": false,
+            "bbb": false,
+            "secureCheckout": true
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": false,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": false,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": {
+          "category": "about",
+          "keyParagraphs": [
+            "Our mission is to inspire travellers, empowering them to discover a better way to travel by exploring the world on hiking, cycling, and other adventure tours. Founded and staffed by a team of travellers who have amassed their fair share of adventure stories, 10Adventures is a world-leader in active vacations and self-guided travel.",
+            "Simply put: We know adventure, and our team understands everything that needs to be done to organize the trip of a lifetime."
+          ],
+          "headings": [
+            "About 10Adventures",
+            "Discover a better way to travel with 10Adventures",
+            "Trip planning is a breeze",
+            "Personalized travel experiences",
+            "24-7 support",
+            "The 10Adventures Origin Story",
+            "The Moulding of a Traveller",
+            "Lessons Learned"
+          ],
+          "foundingStory": null,
+          "mission": "Our mission is to inspire travellers, empowering them to discover a better way to travel by exploring the world on hiking, cycling, and other adventure tours.",
+          "stats": [
+            "85+ countries"
+          ]
+        },
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": 3.7,
+        "reviewCount": 183,
+        "snippets": [
+          "Anyone can write a Trustpilot review. People who write reviews have ownership to edit or delete them at any time, and they’ll be displayed as long as an account is active.",
+          "Learn about Trustpilot’s review process."
+        ],
+        "commonPraise": [],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:16:06.356Z"
+  },
+  {
+    "id": "130",
+    "name": "10KHits",
+    "slug": "10khits-coupons",
+    "web_url": "https://www.10khits.com/",
+    "active_coupons_count": "28",
+    "category_names": "[\"Software\"]",
+    "tier": "B",
+    "score": 45,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": "Free website traffic to your site",
+          "metaDescription": "Free website traffic to your personal blogs, business websites, online stores and videos. 10KHits is the leading traffic exchange since 2011!",
+          "ogDescription": "Take your website's traffic to new heights with our powerful exchange.",
+          "heroTaglines": [],
+          "productHeadings": [
+            "Scalable, on-demand website hits for webmasters",
+            "Promote your links to thousands of users on our traffic exchange!",
+            "Sign Up Free",
+            "Get Started with a Plan",
+            "Start with a Free Plan!",
+            "Booster Packs",
+            "200K Traffic Points",
+            "40 Website Slots"
+          ],
+          "keyParagraphs": [],
+          "customerReviews": [],
+          "trustSignals": {
+            "yearsInBusiness": "since 2011",
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": null,
+            "trustpilot": false,
+            "bbb": false,
+            "secureCheckout": false
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": false,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": false,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": {
+          "category": "about",
+          "keyParagraphs": [
+            "10KHits is the leading traffic exchange service that empowers thousands of webmasters with traffic to their websites. With 10KHits, users can receive hundreds of thousands of hits to their websites. Signing up is easy and does not require a credit card. There's no catch to it either, it's 100% free to use! We do offer affordable account upgrades which unlocks various features. 10KHits is the de facto standard traffic exchange for webmasters, small business owners who want scalable and on-demand results for their websites."
+          ],
+          "headings": [
+            "About Us",
+            "400,000+ members and growing strong.",
+            "Over 200,000 websites added to and rotating in our network.",
+            "Many happy customers! :)"
+          ],
+          "foundingStory": null,
+          "mission": null,
+          "stats": [
+            "400,000+ members"
+          ]
+        },
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": 2.2,
+        "reviewCount": 309,
+        "snippets": [
+          "I checked their numbers with google analytics after the first day and nothing is showing up there...",
+          "It does not accept several sites. You will have to upgrade. The worst site for visits. I do not recommend it.",
+          "Absolutely fantastic service! The traffic exchange website significantly boosted my site’s visits, delivering exactly what it promised.",
+          "Random got $68 charge with reoccurring payments from this service out of nowhere, never heard of it.",
+          "Very very worse service. I bought 10$ credit means 60k credit point. Which means I have 60k points means I get 50-60k visitors because I set it to 1 point= 10 sec. but i get only approx 7k visitors and now my point is 0....so please don't buy anything from them... All doing scam.... Froud company it is. .. Even now they not reply me from last 2 days after sharing proper screen shot with them... So once again I said don't buy anything from them... 10khits.com is a scam froud company",
+          "Traffic. I'm writing this review of 10KHits in order to share my experience with you. I've been using it for about a year now, and I love it!I don't know if you've used any of the other traffic exchanges, but this one is the best by far."
+        ],
+        "commonPraise": [
+          "recommend",
+          "best",
+          "fantastic"
+        ],
+        "commonComplaints": [
+          "never"
+        ],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:16:12.262Z"
+  },
+  {
+    "id": "131",
+    "name": "10Web",
+    "slug": "10web-coupons",
+    "web_url": "https://10web.io",
+    "active_coupons_count": "29",
+    "category_names": "[\"Software\"]",
+    "tier": "B",
+    "score": 52,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": "Build your website.",
+          "metaDescription": "Unlock powerful tools for hosting, building, optimizing, and securing your site. Elevate your web presence with 10Web.",
+          "ogDescription": "Unlock powerful tools for hosting, building, optimizing, and securing your site. Elevate your web presence with 10Web.",
+          "heroTaglines": [
+            "Build your website.",
+            "Create production-ready websites  by chatting with AI."
+          ],
+          "productHeadings": [],
+          "keyParagraphs": [
+            "Build your dream website in seconds  with AI Website Builder.",
+            "Quickly turn your business or any idea into a fully functional website with AI. No technical skills needed.",
+            "Lunch an ecommerce store with AI, set up online payments, products and manage everything in one place.",
+            "Reduce production time using  AI-driven tools to build, edit, and  manage WordPress websites all  from one platform.",
+            "Launch your own branded AI website SaaS platform. Resell 10Web and your own services, create custom plans, manage, and bill clients automatically.",
+            "Deeply integrate AI site creation in your product and user flows, then bundle or upsell complete, ready-to-publish websites."
+          ],
+          "customerReviews": [],
+          "trustSignals": {
+            "yearsInBusiness": null,
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": null,
+            "trustpilot": true,
+            "bbb": false,
+            "secureCheckout": true
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": false,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": false,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": {
+          "category": "about",
+          "keyParagraphs": [
+            "Build your dream website in seconds  with AI Website Builder.",
+            "Launch your own branded AI website SaaS platform. Resell 10Web and your own services, create custom plans, manage, and bill clients automatically.",
+            "Deeply integrate AI site creation in your product and user flows, then bundle or upsell complete, ready-to-publish websites.",
+            "Here’s how we streamline and speed up WordPress development with AI."
+          ],
+          "headings": [
+            "WordPress AI Website Builder",
+            "Build your WordPress website today with AI.",
+            "2M+ websites created with  10Web AI website generator.",
+            "Resell or integrate AI Website Builder  under your brand.",
+            "White Label Reseller dashboard.",
+            "AI Website Builder API.",
+            "The best  WordPress  Website Builder  for building, hosting, and  managing  WordPress  websites.",
+            "Deliver websites in hours with AI WordPress Builder."
+          ],
+          "foundingStory": null,
+          "mission": null,
+          "stats": []
+        },
+        "faq": null,
+        "shipping": null,
+        "returns": null
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": 4.6,
+        "reviewCount": 2296,
+        "snippets": [
+          "Long, insightful responses to my questions",
+          "Working with the automated system was awful. I'd give it a ZERO stars.  But, once a real person engaged, she was able to take care of the issues and get it resolved.",
+          "The support that I recieved was accurate, the agent was very friendy and helped me with all my concerns, she guided me through every step to reach the solutions. The answers and response times were fast.",
+          "Very thoughtful, helpful and understanding.",
+          "greate support, Marta has solved my problem perfectly"
+        ],
+        "commonPraise": [
+          "great",
+          "fast"
+        ],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": true,
+        "threads": [
+          {
+            "title": "Best AI Website Builders: I Tested 15+ Tools and Narrowed It Down to 7",
+            "snippet": "Hello everyone,\n\nThere are so many AI website builders out there now. Picking the right one for your needs can be tough. But maybe my experience can help you.\n\nI've been building websites and testing AI tools for years. I've tried many different website builders. This is partly because I work as a web developer. And partly because I like helping friends and clients who aren't tech-savvy set up the",
+            "score": 127,
+            "subreddit": "CopilotPro",
+            "sentiment": "positive",
+            "url": "https://reddit.com/r/CopilotPro/comments/1n01x5r/best_ai_website_builders_i_tested_15_tools_and/"
+          },
+          {
+            "title": "Lazy Affiliate Marketing? This AI Strategy Changed Everything",
+            "snippet": " \n\nEver wonder if an AI-powered affiliate site could bring in the bucks? Turns out, it absolutely can! I came across an interesting strategy that’s worth breaking down:\n\n**Step 1: Build Your Affiliate Foundation**\n\n* Your AI-Generated Site: Speed is the name of the game, and tools like [10web.io](https://beginnersblog.org/recommends/10web-ai-builder) AI builder are your friends. Kickstarting your ",
+            "score": 1,
+            "subreddit": "iblogging",
+            "sentiment": "positive",
+            "url": "https://reddit.com/r/iblogging/comments/1azpa5z/lazy_affiliate_marketing_this_ai_strategy_changed/"
+          }
+        ],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "positive"
+      }
+    },
+    "scraped_at": "2026-03-01T12:16:23.993Z"
+  },
+  {
+    "id": "132",
+    "name": "110racing",
+    "slug": "110racing-coupons",
+    "web_url": "https://www.110racing.com/",
+    "active_coupons_count": "8",
+    "category_names": "[\"Automotive\"]",
+    "tier": "A",
+    "score": 58,
+    "scraped_data": {
+      "website": {
+        "homepage": {
+          "h1": "110Racing",
+          "metaDescription": "110 Racing is your one-stop shop to buy Adult & Youth Motocross Gear & Clothing. We have dirt bike riding gloves, custom dirt bike jerseys & pants, snapback camo hats, the classic tees, motocross performance & racing apparel, shirts, softshell jackets, jersey ID kits, stickers & much more all made in the USA.",
+          "ogDescription": "110 Racing is your one-stop shop to buy Adult & Youth Motocross Gear & Clothing. We have dirt bike riding gloves, custom dirt bike jerseys & pants, snapback camo hats, the classic tees, motocross performance & racing apparel, shirts, softshell jackets, jersey ID kits, stickers & much more all made in the USA.",
+          "heroTaglines": [
+            "SE25 IGNTIE"
+          ],
+          "productHeadings": [
+            "2026 VOLTAGE COLLECTION",
+            "2026 ASCEND COLLECTION",
+            "2026 APEX COLLECTION",
+            "PR26 REDBUD FREEDOM COLLECTION",
+            "SE2025.5 ASPIRE COLLECTION",
+            "SE25 IGNTIE",
+            "SE25 IGNITE COLLECTION",
+            "Collection list",
+            "Testimonials"
+          ],
+          "keyParagraphs": [
+            "110 Racing gear is by far the most comfortable and most durable gear I have worn! Highly recommend getting a set if you haven't already!",
+            "High quality and well designed riding gear. The material is incomparable to that of other brands being super flexible and having just the right amount of stretch. The pants are easy for youth riders to tighten & unlatch unassisted. We love the fit and durability of each article from the Jersey to the gloves. The customer service Chris, Jen and the rest of the crew provide is as top notch as the gear. Friendly, timely and helpful. 5 stars.",
+            "Like everyone usually is I was skeptical about buying new gear. It’s always expensive and rips after one ride leaving me upset that I spent money on cheap gear that wasn’t so cheap. Well not with this line!! Loving the way the gear lets me move freely on the bike and not one tear or rip yet going into season two. Just ordered the Daytona set and can’t wait to see what else they come out with next. 110 racing is the way to go!! My teammates over at Griffy racing love it too.",
+            "There is not a lot of options for peewees on the market, and 110 Racing nailed it with their kids line! They incorporated all of the same features into the kids line that commonly see with adult styles. The material is soft yet durbale, doesnt fade, and washes up like new! 10/10 for their gear.",
+            "Love the material, it's stretchy, breathable and feels nice! Also love that the styles are unique and always changing!",
+            "All 110 Racing pants and jerseys are fully customized and designed in house here in the USA. We only use performance fabrics of the highest quality. All pants and jerseys are designed with the latest technology for all riders."
+          ],
+          "customerReviews": [
+            "110 Racing gear is by far the most comfortable and most durable gear I have worn! Highly recommend getting a set if you haven't already!",
+            "There is not a lot of options for peewees on the market, and 110 Racing nailed it with their kids line! They incorporated all of the same features into the kids line that commonly see with adult styles. The material is soft yet durbale, doesnt fade, and washes up like new! 10/10 for their gear.",
+            "Love the material, it's stretchy, breathable and feels nice! Also love that the styles are unique and always changing!"
+          ],
+          "trustSignals": {
+            "yearsInBusiness": null,
+            "returnWindow": null,
+            "freeShippingThreshold": null,
+            "warranty": null,
+            "reviewCount": null,
+            "rating": "5",
+            "trustpilot": false,
+            "bbb": false,
+            "secureCheckout": true
+          },
+          "specialOffers": {
+            "financing": false,
+            "freeShipping": true,
+            "appDiscount": false,
+            "studentDiscount": false,
+            "loyaltyProgram": true,
+            "subscriptionSave": false,
+            "referralProgram": false
+          },
+          "visibleCodes": [],
+          "salePatterns": []
+        },
+        "about": {
+          "category": "about",
+          "keyParagraphs": [
+            "It all began with a passion for motocross at a young age. Growing up the dream was to always start a motocross business with the name \"110 Racing\". Everyone always asked \"how come 110\" and I always responded 110 Octane, which is high octane fuel would always make a great name for a company. Fast forward years later and we are here chasing the dream of our 110 Racing Clothing Line.",
+            "110 Racing is family owned and operated company; owned by soon to be husband and wife who have a passion for the sport of motocross and love for wild adventures. The 110 Racing Family is excited to offer all athletes with the same passion for this sport, fun and unique motocross jersey's and pants. All motocross clothing is high quality, custom designed in South Florida and will be offered from pee-wee sizing up to adult sizing.",
+            "Our brand extends further than clothing and into the community – bringing together families all over the country, with different backgrounds, adults and kids, and experiences to create a more inclusive culture for all in the motocross community.",
+            "110 Racing was started in 2021 and is a fast growing company located here in the USA. We ship international and are excited to share our custom motocross designs with everyone across the world. 110 Racing not only offers custom fitted jersey's and pants but we also have a fun Lifestyle collection offering tee-shirts and hats made here in the USA."
+          ],
+          "headings": [
+            "Currency",
+            "ABOUT US",
+            "OUR STORY"
+          ],
+          "foundingStory": "started in 2021",
+          "mission": "we are here chasing the dream of our 110 Racing Clothing Line.",
+          "stats": []
+        },
+        "faq": {
+          "category": "faq",
+          "faqs": [
+            {
+              "question": "Ready to Represent 110 Racing?",
+              "answer": "Join a community of dedicated riders who are pushing the limits every weekend. Apply today and take the next step in your racing career.",
+              "source": "heading"
+            }
+          ]
+        },
+        "shipping": null,
+        "returns": {
+          "category": "returns",
+          "returnWindow": null,
+          "freeReturns": true,
+          "conditions": [
+            "Item must be in original condition",
+            "Sale items may be excluded"
+          ],
+          "keyParagraphs": [
+            "We want you to love your 110 Racing gear. Please review the policy below carefully before placing an order.",
+            "We offer free returns within 30 days of delivery on in-stock, non-custom/pre-order items shipped within the United States.",
+            "To start a return, email returns@110racing.com.Items sent back without approval will not be accepted."
+          ]
+        }
+      },
+      "trustpilot": {
+        "found": true,
+        "rating": null,
+        "reviewCount": 0,
+        "snippets": [],
+        "commonPraise": [],
+        "commonComplaints": [],
+        "claimed": true
+      },
+      "reddit": {
+        "found": false,
+        "threads": [],
+        "commonQuestions": [],
+        "commonComplaints": [],
+        "overallSentiment": "neutral"
+      }
+    },
+    "scraped_at": "2026-03-01T12:16:39.084Z"
+  }
+]
